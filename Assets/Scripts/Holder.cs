@@ -3,7 +3,7 @@ using UnityEngine.Tilemaps;
 
 public class Holder : MonoBehaviour
 {
-    public TetrominoData? heldPiece { get; private set; }
+    public TetrominoData heldPiece { get; private set; }
     private Tilemap tilemap;
 
     private void Awake()
@@ -13,16 +13,8 @@ public class Holder : MonoBehaviour
 
     public void SetHeldPiece(TetrominoData data)
     {
-        if (heldPiece.HasValue)
-        {
-            Utilities.SetCells(tilemap, heldPiece.Value.cells, null);
-        }
-
+        tilemap.ClearAllTiles();
         heldPiece = data;
-
-        if (heldPiece.HasValue)
-        {
-            Utilities.SetCells(tilemap, heldPiece.Value.cells, heldPiece.Value.tile);
-        }
+        Utilities.SetCells(tilemap, heldPiece.cells, heldPiece.tile);
     }
 }

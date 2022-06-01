@@ -5,9 +5,9 @@ using System.Linq;
 
 public class Board : MonoBehaviour
 {
-    public TetrominoData[] tetrominoDatas;
     public Vector2Int boardSize = new(10, 20);
     public Holder holder;
+    public TetrominoQueue tetrominoQueue;
 
     public Piece activePiece { get; private set; }
     public Tilemap tilemap { get; private set; }
@@ -27,11 +27,6 @@ public class Board : MonoBehaviour
     {
         tilemap = GetComponentInChildren<Tilemap>();
         activePiece = GetComponentInChildren<Piece>();
-
-        for (int i = 0; i < tetrominoDatas.Length; ++i)
-        {
-            tetrominoDatas[i].Initialize();
-        }
     }
 
     private void Start()
@@ -49,7 +44,8 @@ public class Board : MonoBehaviour
 
     public void SpawnRandomPiece()
     {
-        SpawnPiece(tetrominoDatas[Random.Range(0, tetrominoDatas.Length)]);
+        var nextTetromino = tetrominoQueue.PopNextTetromino();
+        SpawnPiece(nextTetromino);
     }
 
     public void SpawnPiece(TetrominoData data)
@@ -129,8 +125,8 @@ public class Board : MonoBehaviour
         holder.SetHeldPiece(activePiece.data);
         Clear(activePiece);
 
-        if (prevHeldPiece.HasValue)
-            SpawnPiece(prevHeldPiece.Value);
+        if (prevHeldPiece != null)
+            SpawnPiece(prevHeldPiece);
 
         holdingLocked = true;
     }
