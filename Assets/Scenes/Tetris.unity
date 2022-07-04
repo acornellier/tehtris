@@ -539,10 +539,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   datas:
-  - tetromino: 2
+  - tetromino: 0
     tile: {fileID: 11400000, guid: e699e5a0a80e826448f4a081c7d75191, type: 2}
-  - tetromino: 2
-    tile: {fileID: 11400000, guid: 0ca6728c40de798488e33f8243380221, type: 2}
+  - tetromino: 1
+    tile: {fileID: 11400000, guid: c12cf36f7e1ec7746ac445c20d21f625, type: 2}
   - tetromino: 2
     tile: {fileID: 11400000, guid: e50f82018a793f94a97468fa7289b080, type: 2}
   - tetromino: 3

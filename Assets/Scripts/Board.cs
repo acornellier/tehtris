@@ -48,7 +48,7 @@ public class Board : MonoBehaviour
         SpawnPiece(nextTetromino);
     }
 
-    public void SpawnPiece(TetrominoData data)
+    private void SpawnPiece(TetrominoData data)
     {
         var spawnPosition = new Vector2Int(-1, bounds.yMax - 2);
         if (data.tetromino == Tetromino.I)
@@ -59,7 +59,7 @@ public class Board : MonoBehaviour
         Utilities.SetPiece(tilemap, activePiece);
     }
 
-    public void Clear(Piece piece)
+    private void Clear(Piece piece)
     {
         foreach (var cell in piece.cells)
         {
@@ -81,7 +81,7 @@ public class Board : MonoBehaviour
 
     public void ClearLines()
     {
-        List<int> linesToClear = Enumerable
+        var linesToClear = Enumerable
             .Range(bounds.yMin, bounds.size.y)
             .Where(
                 y =>
@@ -94,11 +94,11 @@ public class Board : MonoBehaviour
         if (!linesToClear.Any())
             return;
 
-        int linesCleared = 0;
-        for (int y = linesToClear[0]; y < bounds.yMax; ++y)
+        var linesCleared = 0;
+        for (var y = linesToClear[0]; y < bounds.yMax; ++y)
         {
             var clearing = linesToClear.Contains(y);
-            for (int x = bounds.xMin; x < bounds.xMax; ++x)
+            for (var x = bounds.xMin; x < bounds.xMax; ++x)
             {
                 var position = new Vector3Int(x, y, 0);
                 if (!clearing)
@@ -126,7 +126,13 @@ public class Board : MonoBehaviour
         Clear(activePiece);
 
         if (prevHeldPiece != null)
+        {
             SpawnPiece(prevHeldPiece);
+        }
+        else
+        {
+            SpawnRandomPiece();
+        }
 
         holdingLocked = true;
     }
