@@ -1,12 +1,14 @@
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.Tilemaps;
+using Random = System.Random;
 
 public class TetrominoQueue : MonoBehaviour
 {
     public List<TetrominoData> datas;
-    private Tilemap tilemap;
     private readonly List<TetrominoData> nextTetrominos = new();
+    private Tilemap tilemap;
 
     private void Awake()
     {
@@ -24,7 +26,9 @@ public class TetrominoQueue : MonoBehaviour
 
         var nextTetromino = nextTetrominos[0];
         nextTetrominos.RemoveAt(0);
-        FillQueue();
+
+        if (nextTetrominos.Count < 5)
+            FillQueue();
 
         Draw();
 
@@ -33,19 +37,17 @@ public class TetrominoQueue : MonoBehaviour
 
     private void FillQueue()
     {
-        while (nextTetrominos.Count < 5)
-        {
-            nextTetrominos.Add(datas[Random.Range(0, datas.Count)]);
-        }
+        var rnd = new Random();
+        foreach (var _ in datas) nextTetrominos.AddRange(datas.OrderBy(_ => rnd.Next()));
     }
 
     private void Draw()
     {
-        for (int i = 0; i < nextTetrominos.Count; ++i)
+        for (var i = 0; i < 5 && i < nextTetrominos.Count; ++i)
         {
             var tetromino = nextTetrominos[i];
             var position = new Vector2Int(0, i * -3);
-            Utilities.SetCells(tilemap, tetromino.cells, tetromino.tile, position);
+            Utilities.SetCells(tilemap, tetromino.Cells, tetromino.tile, position);
         }
     }
 }

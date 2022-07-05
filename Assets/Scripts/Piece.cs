@@ -3,33 +3,45 @@ using UnityEngine;
 
 public class Piece : MonoBehaviour
 {
-    public Board board { get; private set; }
-    public Vector2Int position { get; private set; }
-    public Vector2Int[] cells { get; private set; }
-    public TetrominoData data { get; private set; }
-
-    private readonly float firstMoveDelay = 0.15f;
-    private readonly float holdMoveDelay = 0.01f;
-    private float moveTime;
-    private Vector2Int lastMove;
-    private int sameSequentialMoves;
-
-    private int rotationIndex;
+    private const float FirstMoveDelay = 0.15f;
+    private const float HoldMoveDelay = 0.01f;
+    private const float LockDelay = 0.5f;
+    private const float MaxLockDelay = 5f;
 
     public float stepDelay = 1f;
-    private float stepTime;
+    private Vector2Int lastMove;
 
     private bool locking;
-    private readonly float lockDelay = 0.5f;
-    private readonly float maxLockDelay = 5f;
     private float lockTime; // delayed when moving
     private float maxLockTime; // never delayed
+    private float moveTime;
+
+    private int rotationIndex;
+    private int sameSequentialMoves;
+    private float stepTime;
+    private Board Board { get; set; }
+    public Vector2Int Position { get; private set; }
+    public Vector2Int[] Cells { get; private set; }
+    public TetrominoData Data { get; private set; }
+
+    private void Update()
+    {
+        Utilities.ClearPiece(Board.Tilemap, this);
+
+        HandleMovement();
+        HandleRotation();
+
+        HandleStep();
+        HandleLocking();
+
+        Utilities.SetPiece(Board.Tilemap, this);
+    }
 
     public void Initialize(Board board, Vector2Int position, TetrominoData data)
     {
-        this.board = board;
-        this.position = position;
-        this.data = data;
+        Board = board;
+        Position = position;
+        Data = data;
 
         stepTime = Time.time + stepDelay;
         locking = false;
@@ -37,20 +49,8 @@ public class Piece : MonoBehaviour
         sameSequentialMoves = 0;
         rotationIndex = 0;
 
-        cells = new Vector2Int[data.cells.Length];
-        Array.Copy(data.cells, cells, data.cells.Length);
-    }
-
-    private void Update()
-    {
-        Utilities.ClearPiece(board.tilemap, this);
-
-        HandleMovement();
-        HandleRotation();
-        HandleStep();
-        HandleLocking();
-
-        Utilities.SetPiece(board.tilemap, this);
+        Cells = new Vector2Int[data.Cells.Length];
+        Array.Copy(data.Cells, Cells, data.Cells.Length);
     }
 
     private void HandleMovement()
@@ -86,13 +86,8 @@ public class Piece : MonoBehaviour
     private void HandleRotation()
     {
         if (Input.GetKeyDown(KeyCode.Z))
-        {
             Rotate(-1);
-        }
-        else if (Input.GetKeyDown(KeyCode.UpArrow))
-        {
-            Rotate(1);
-        }
+        else if (Input.GetKeyDown(KeyCode.UpArrow)) Rotate(1);
     }
 
     private void HandleStep()
@@ -101,17 +96,17 @@ public class Piece : MonoBehaviour
             return;
 
         stepTime += stepDelay;
-        bool success = Move(Vector2Int.down);
+        var success = Move(Vector2Int.down);
 
         if (success)
         {
             locking = false;
         }
-        else if (!success && !locking)
+        else if (!locking)
         {
             locking = true;
-            lockTime = Time.time + lockDelay;
-            maxLockTime = Time.time + maxLockDelay;
+            lockTime = Time.time + LockDelay;
+            maxLockTime = Time.time + MaxLockDelay;
         }
     }
 
@@ -123,7 +118,9 @@ public class Piece : MonoBehaviour
 
     private void HardDrop()
     {
-        while (Move(Vector2Int.down)) { }
+        while (Move(Vector2Int.down))
+        {
+        }
 
         Lock();
     }
@@ -133,53 +130,50 @@ public class Piece : MonoBehaviour
         if (Time.time < moveTime)
             return;
 
-        if (Move(move))
-        {
-            sameSequentialMoves = lastMove == move ? sameSequentialMoves + 1 : 0;
-            var moveDelay = sameSequentialMoves == 0 ? firstMoveDelay : holdMoveDelay;
-            moveTime = Time.time + moveDelay;
-            lastMove = move;
-        }
+        if (!Move(move)) return;
+
+        sameSequentialMoves = lastMove == move ? sameSequentialMoves + 1 : 0;
+        var moveDelay = sameSequentialMoves == 0 ? FirstMoveDelay : HoldMoveDelay;
+        moveTime = Time.time + moveDelay;
+        lastMove = move;
     }
 
     private bool Move(Vector2Int translation)
     {
-        var newPosition = position + translation;
+        var newPosition = Position + translation;
 
-        bool valid = board.IsValidPosition(this, newPosition);
-        if (valid)
-        {
-            position = newPosition;
-            lockTime += lockDelay;
-        }
+        var valid = Board.IsValidPosition(this, newPosition);
+        if (!valid) return false;
 
-        return valid;
+        Position = newPosition;
+        lockTime += LockDelay;
+
+        return true;
     }
 
     private void Rotate(int direction)
     {
-        int originalRotationIndex = rotationIndex;
+        var originalRotationIndex = rotationIndex;
         rotationIndex = (rotationIndex + direction) % 4;
 
         ApplyRotationMatrix(direction);
 
-        if (!TestWallKicks(rotationIndex, direction))
-        {
-            rotationIndex = originalRotationIndex;
-            ApplyRotationMatrix(-direction);
-        }
+        if (TestWallKicks(rotationIndex, direction)) return;
+
+        rotationIndex = originalRotationIndex;
+        ApplyRotationMatrix(-direction);
     }
 
     private void ApplyRotationMatrix(int direction)
     {
-        for (int i = 0; i < cells.Length; i++)
+        for (var i = 0; i < Cells.Length; i++)
         {
-            Vector2 cell = cells[i];
+            Vector2 cell = Cells[i];
 
             int x;
             int y;
 
-            switch (data.tetromino)
+            switch (Data.tetromino)
             {
                 case Tetromino.I:
                 case Tetromino.O:
@@ -189,58 +183,60 @@ public class Piece : MonoBehaviour
                     y = Mathf.CeilToInt(RotateY(cell, direction));
                     break;
 
+                case Tetromino.T:
+                case Tetromino.J:
+                case Tetromino.L:
+                case Tetromino.S:
+                case Tetromino.Z:
                 default:
                     x = Mathf.RoundToInt(RotateX(cell, direction));
                     y = Mathf.RoundToInt(RotateY(cell, direction));
                     break;
             }
 
-            cells[i] = new Vector2Int(x, y);
+            Cells[i] = new Vector2Int(x, y);
         }
     }
 
-    private bool TestWallKicks(int rotationIndex, int rotationDirection)
+    private bool TestWallKicks(int newRotationIndex, int rotationDirection)
     {
-        int wallKickIndex = GetWallKickIndex(rotationIndex, rotationDirection);
+        var wallKickIndex = GetWallKickIndex(newRotationIndex, rotationDirection);
 
-        for (int i = 0; i < data.wallKicks.GetLength(1); ++i)
+        for (var i = 0; i < Data.WallKicks.GetLength(1); ++i)
         {
-            print(data.wallKicks[wallKickIndex, i]);
-            if (Move(data.wallKicks[wallKickIndex, i]))
-            {
-                return true;
-            }
+            print(Data.WallKicks[wallKickIndex, i]);
+            if (Move(Data.WallKicks[wallKickIndex, i])) return true;
         }
 
         return false;
     }
 
-    private int GetWallKickIndex(int rotationIndex, int rotationDirection)
+    private int GetWallKickIndex(int newRotationIndex, int rotationDirection)
     {
-        int wallKickIndex = rotationIndex * 2;
+        var wallKickIndex = newRotationIndex * 2;
 
         if (rotationDirection < 0)
             wallKickIndex--;
 
-        return (wallKickIndex + data.wallKicks.GetLength(0)) % data.wallKicks.GetLength(0);
+        return (wallKickIndex + Data.WallKicks.GetLength(0)) % Data.WallKicks.GetLength(0);
     }
 
-    private float RotateX(Vector3 cell, int direction)
+    private static float RotateX(Vector3 cell, int direction)
     {
-        return (cell.x * Data.RotationMatrix[0] * direction)
-            + (cell.y * Data.RotationMatrix[1] * direction);
+        return cell.x * global::Data.RotationMatrix[0] * direction
+               + cell.y * global::Data.RotationMatrix[1] * direction;
     }
 
-    private float RotateY(Vector3 cell, int direction)
+    private static float RotateY(Vector3 cell, int direction)
     {
-        return (cell.x * Data.RotationMatrix[2] * direction)
-            + (cell.y * Data.RotationMatrix[3] * direction);
+        return cell.x * global::Data.RotationMatrix[2] * direction
+               + cell.y * global::Data.RotationMatrix[3] * direction;
     }
 
     private void Lock()
     {
-        Utilities.SetPiece(board.tilemap, this);
-        board.ClearLines();
-        board.SpawnRandomPiece();
+        Utilities.SetPiece(Board.Tilemap, this);
+        Board.ClearLines();
+        Board.SpawnRandomPiece();
     }
 }

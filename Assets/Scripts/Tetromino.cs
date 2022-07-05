@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using UnityEngine.Tilemaps;
 
@@ -12,17 +13,17 @@ public enum Tetromino
     Z,
 }
 
-[System.Serializable]
+[Serializable]
 public class TetrominoData
 {
     public Tetromino tetromino;
     public Tile tile;
-    public Vector2Int[] cells { get; private set; }
-    public Vector2Int[,] wallKicks { get; private set; }
+    public Vector2Int[] Cells { get; private set; }
+    public Vector2Int[,] WallKicks { get; private set; }
 
     public void Initialize()
     {
-        cells = Data.Cells[tetromino];
-        wallKicks = Data.WallKicks[tetromino];
+        Cells = Data.Cells[tetromino];
+        WallKicks = Data.WallKicks[tetromino];
     }
 }

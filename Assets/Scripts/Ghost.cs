@@ -1,16 +1,16 @@
+using System;
 using UnityEngine;
 using UnityEngine.Tilemaps;
-using System;
 
 public class Ghost : MonoBehaviour
 {
     public Tile tile;
     public Board board;
     public Piece piece;
+    private Vector2Int[] cells;
+    private Vector2Int position;
 
     private Tilemap tilemap;
-    private Vector2Int position;
-    private Vector2Int[] cells;
 
     private void Awake()
     {
@@ -33,17 +33,17 @@ public class Ghost : MonoBehaviour
 
     private void Copy()
     {
-        Array.Copy(piece.cells, cells, piece.cells.Length);
+        Array.Copy(piece.Cells, cells, piece.Cells.Length);
     }
 
     private void Drop()
     {
-        var newPosition = piece.position;
+        var newPosition = piece.Position;
         var bottom = -board.boardSize.y / 2 - 1;
 
-        Utilities.ClearPiece(board.tilemap, piece);
+        Utilities.ClearPiece(board.Tilemap, piece);
 
-        for (int y = newPosition.y; y >= bottom; --y)
+        for (var y = newPosition.y; y >= bottom; --y)
         {
             newPosition.y = y;
             if (!board.IsValidPosition(piece, newPosition))
@@ -52,7 +52,7 @@ public class Ghost : MonoBehaviour
             position = newPosition;
         }
 
-        Utilities.SetPiece(board.tilemap, piece);
+        Utilities.SetPiece(board.Tilemap, piece);
     }
 
     private void Set()
