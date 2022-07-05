@@ -62,14 +62,10 @@ public class PlayerPiece : Piece
     private void MoveWithDelay(Vector2Int move)
     {
         if (Time.time < moveTime)
-        {
             return;
-        }
 
         if (!Move(move))
-        {
             return;
-        }
 
         sameSequentialMoves = lastMove == move ? sameSequentialMoves + 1 : 0;
         var moveDelay = sameSequentialMoves == 0 ? FirstMoveDelay : HoldMoveDelay;
@@ -80,12 +76,8 @@ public class PlayerPiece : Piece
     private void HandleRotation()
     {
         if (Input.GetKeyDown(KeyCode.Z))
-        {
             Rotate(-1);
-        }
         else if (Input.GetKeyDown(KeyCode.UpArrow))
-        {
             Rotate(1);
-        }
     }
 }

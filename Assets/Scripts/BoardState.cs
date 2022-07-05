@@ -4,16 +4,14 @@ using UnityEngine;
 
 public class BoardState
 {
-    private Board board;
+    public bool[,] tiles;
+    public List<TetrominoData> queue;
+    public TetrominoData heldPiece;
 
-    private bool[,] tiles;
-    private List<TetrominoData> queue;
-    private TetrominoData heldPiece;
-
-    private Vector2Int piecePosition;
-    private int pieceRotation;
-    private Vector2Int[] pieceCells;
-    private TetrominoData pieceData;
+    public Vector2Int piecePosition;
+    public int pieceRotation;
+    public Vector2Int[] pieceCells;
+    public TetrominoData pieceData;
 
     private BoardState()
     {
@@ -21,16 +19,17 @@ public class BoardState
 
     public BoardState(Board board)
     {
-        this.board = board;
-
         tiles = new bool[board.boardSize.x, board.boardSize.y];
         queue = new List<TetrominoData>(board.tetrominoQueue.NextTetrominos);
         heldPiece = board.holder.HeldPiece;
 
-        piecePosition = board.ActivePiece.Position;
+        piecePosition = new Vector2Int(
+            board.ActivePiece.Position.x - board.Bounds.xMin,
+            board.ActivePiece.Position.y - board.Bounds.yMin
+        );
         pieceCells = board.ActivePiece.Cells;
         pieceData = board.ActivePiece.Data;
-        pieceRotation = board.ActivePiece.rotationIndex;
+        pieceRotation = board.ActivePiece.RotationIndex;
 
         for (var x = board.Bounds.xMin; x < board.Bounds.xMax; ++x)
         {
@@ -42,20 +41,151 @@ public class BoardState
         }
     }
 
-    public BoardState DeepClone(BoardState boardState)
+    public BoardState DeepClone()
     {
         return new BoardState
         {
-            board = boardState.board,
-            tiles = (bool[,])boardState.tiles.Clone(),
-            queue = new List<TetrominoData>(boardState.queue),
-            heldPiece = boardState.heldPiece,
-            piecePosition = boardState.piecePosition,
-            pieceCells = boardState.pieceCells,
-            pieceData = boardState.pieceData,
+            tiles = (bool[,])tiles.Clone(),
+            queue = new List<TetrominoData>(queue),
+            heldPiece = heldPiece,
+            piecePosition = piecePosition,
+            pieceCells = pieceCells,
+            pieceData = pieceData,
         };
     }
 
+    public bool IsValidPosition(Vector2Int position)
+    {
+        return pieceCells.All(
+            cell =>
+            {
+                var tilePosition = position + cell;
+                return tilePosition.x >= 0 &&
+                       tilePosition.x < tiles.GetLength(0) &&
+                       tilePosition.y >= 0 &&
+                       tilePosition.y < tiles.GetLength(1) &&
+                       !tiles[tilePosition.x, tilePosition.y];
+            }
+        );
+    }
+
+    public void HardDrop()
+    {
+        while (Move(Vector2Int.down))
+        {
+        }
+
+        // Lock();
+    }
+
+    public bool Move(Vector2Int translation)
+    {
+        var newPosition = piecePosition + translation;
+
+        var valid = IsValidPosition(newPosition);
+        if (!valid)
+            return false;
+
+        piecePosition = newPosition;
+
+        return true;
+    }
+
+    public void Rotate(int direction)
+    {
+        var originalRotationIndex = pieceRotation;
+        pieceRotation = (pieceRotation + direction) % 4;
+
+        ApplyRotationMatrix(direction);
+
+        if (TestWallKicks(pieceRotation, direction))
+            return;
+
+        pieceRotation = originalRotationIndex;
+        ApplyRotationMatrix(-direction);
+    }
+
+    private void ApplyRotationMatrix(int direction)
+    {
+        for (var i = 0; i < pieceCells.Length; i++)
+        {
+            Vector2 cell = pieceCells[i];
+
+            int x;
+            int y;
+
+            switch (pieceData.tetromino)
+            {
+                case Tetromino.I:
+                case Tetromino.O:
+                    cell.x -= 0.5f;
+                    cell.y -= 0.5f;
+                    x = Mathf.CeilToInt(RotateX(cell, direction));
+                    y = Mathf.CeilToInt(RotateY(cell, direction));
+                    break;
+
+                case Tetromino.T:
+                case Tetromino.J:
+                case Tetromino.L:
+                case Tetromino.S:
+                case Tetromino.Z:
+                default:
+                    x = Mathf.RoundToInt(RotateX(cell, direction));
+                    y = Mathf.RoundToInt(RotateY(cell, direction));
+                    break;
+            }
+
+            pieceCells[i] = new Vector2Int(x, y);
+        }
+    }
+
+    private bool TestWallKicks(int newRotationIndex, int rotationDirection)
+    {
+        var wallKickIndex = GetWallKickIndex(newRotationIndex, rotationDirection);
+
+        for (var i = 0; i < pieceData.WallKicks.GetLength(1); ++i)
+        {
+            if (Move(pieceData.WallKicks[wallKickIndex, i]))
+                return true;
+        }
+
+        return false;
+    }
+
+    private int GetWallKickIndex(int newRotationIndex, int rotationDirection)
+    {
+        var wallKickIndex = newRotationIndex * 2;
+
+        if (rotationDirection < 0)
+            wallKickIndex--;
+
+        return (wallKickIndex + pieceData.WallKicks.GetLength(0)) % pieceData.WallKicks.GetLength(0);
+    }
+
+    private static float RotateX(Vector3 cell, int direction)
+    {
+        return cell.x * Data.RotationMatrix[0] * direction
+               + cell.y * Data.RotationMatrix[1] * direction;
+    }
+
+    private static float RotateY(Vector3 cell, int direction)
+    {
+        return cell.x * Data.RotationMatrix[2] * direction
+               + cell.y * Data.RotationMatrix[3] * direction;
+    }
+
+    public float Evaluate()
+    {
+        return tiles.GetLength(0) - piecePosition.x;
+    }
+
+    // private void Lock()
+    // {
+    //     Utilities.SetPiece(Board.Tilemap, this);
+    //     Board.ClearLines();
+    //     Board.SpawnNextPiece();
+    // }
+    //
     // public void SpawnNextPiece()
     // {
     //     var nextTetromino = queue.();
@@ -82,18 +212,7 @@ public class BoardState
     //         Tilemap.SetTile((Vector3Int)(cell + piece.Position), null);
     //     }
     // }
-
-    public bool IsValidPosition(Vector2Int position)
-    {
-        return pieceCells.All(cell =>
-            {
-                var tilePosition = position + cell;
-                return board.Bounds.Contains(tilePosition) &&
-                       tiles[tilePosition.x - board.Bounds.xMin, tilePosition.y - board.Bounds.yMin];
-            }
-        );
-    }
-
+    //
     // public void ClearLines()
     // {
     //     var linesToClear = Enumerable
@@ -158,125 +277,5 @@ public class BoardState
     //     }
     //
     //     holdingLocked = true;
-    // }
-
-    public void HardDrop()
-    {
-        while (Move(Vector2Int.down))
-        {
-        }
-
-        // Lock();
-    }
-
-    public bool Move(Vector2Int translation)
-    {
-        var newPosition = piecePosition + translation;
-
-        var valid = IsValidPosition(newPosition);
-        if (!valid)
-        {
-            return false;
-        }
-
-        piecePosition = newPosition;
-
-        return true;
-    }
-
-    public void Rotate(int direction)
-    {
-        var originalRotationIndex = pieceRotation;
-        pieceRotation = (pieceRotation + direction) % 4;
-
-        ApplyRotationMatrix(direction);
-
-        if (TestWallKicks(pieceRotation, direction))
-        {
-            return;
-        }
-
-        pieceRotation = originalRotationIndex;
-        ApplyRotationMatrix(-direction);
-    }
-
-    private void ApplyRotationMatrix(int direction)
-    {
-        for (var i = 0; i < pieceCells.Length; i++)
-        {
-            Vector2 cell = pieceCells[i];
-
-            int x;
-            int y;
-
-            switch (pieceData.tetromino)
-            {
-                case Tetromino.I:
-                case Tetromino.O:
-                    cell.x -= 0.5f;
-                    cell.y -= 0.5f;
-                    x = Mathf.CeilToInt(RotateX(cell, direction));
-                    y = Mathf.CeilToInt(RotateY(cell, direction));
-                    break;
-
-                case Tetromino.T:
-                case Tetromino.J:
-                case Tetromino.L:
-                case Tetromino.S:
-                case Tetromino.Z:
-                default:
-                    x = Mathf.RoundToInt(RotateX(cell, direction));
-                    y = Mathf.RoundToInt(RotateY(cell, direction));
-                    break;
-            }
-
-            pieceCells[i] = new Vector2Int(x, y);
-        }
-    }
-
-    private bool TestWallKicks(int newRotationIndex, int rotationDirection)
-    {
-        var wallKickIndex = GetWallKickIndex(newRotationIndex, rotationDirection);
-
-        for (var i = 0; i < pieceData.WallKicks.GetLength(1); ++i)
-        {
-            if (Move(pieceData.WallKicks[wallKickIndex, i]))
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private int GetWallKickIndex(int newRotationIndex, int rotationDirection)
-    {
-        var wallKickIndex = newRotationIndex * 2;
-
-        if (rotationDirection < 0)
-        {
-            wallKickIndex--;
-        }
-
-        return (wallKickIndex + pieceData.WallKicks.GetLength(0)) % pieceData.WallKicks.GetLength(0);
-    }
-
-    private static float RotateX(Vector3 cell, int direction)
-    {
-        return cell.x * Data.RotationMatrix[0] * direction
-               + cell.y * Data.RotationMatrix[1] * direction;
-    }
-
-    private static float RotateY(Vector3 cell, int direction)
-    {
-        return cell.x * Data.RotationMatrix[2] * direction
-               + cell.y * Data.RotationMatrix[3] * direction;
-    }
-
-    // private void Lock()
-    // {
-    //     Utilities.SetPiece(Board.Tilemap, this);
-    //     Board.ClearLines();
-    //     Board.SpawnNextPiece();
     // }
 }

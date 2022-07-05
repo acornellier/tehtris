@@ -13,7 +13,7 @@ public abstract class Piece : MonoBehaviour
 
     private float stepTime;
     protected Board Board { get; private set; }
-    public int rotationIndex;
+    public int RotationIndex { get; private set; }
     public Vector2Int Position { get; private set; }
     public Vector2Int[] Cells { get; private set; }
     public TetrominoData Data { get; private set; }
@@ -39,7 +39,7 @@ public abstract class Piece : MonoBehaviour
 
         stepTime = Time.time + StepDelay;
         locking = false;
-        rotationIndex = 0;
+        RotationIndex = 0;
 
         Cells = new Vector2Int[data.Cells.Length];
         Array.Copy(data.Cells, Cells, data.Cells.Length);
@@ -48,9 +48,7 @@ public abstract class Piece : MonoBehaviour
     private void HandleStep()
     {
         if (Time.time < stepTime)
-        {
             return;
-        }
 
         stepTime += StepDelay;
         var success = Move(Vector2Int.down);
@@ -70,9 +68,7 @@ public abstract class Piece : MonoBehaviour
     private void HandleLocking()
     {
         if (locking && (Time.time > lockTime || Time.time > maxLockTime))
-        {
             Lock();
-        }
     }
 
     protected void HardDrop()
@@ -90,9 +86,7 @@ public abstract class Piece : MonoBehaviour
 
         var valid = Board.IsValidPosition(this, newPosition);
         if (!valid)
-        {
             return false;
-        }
 
         Position = newPosition;
         lockTime += LockDelay;
@@ -102,17 +96,15 @@ public abstract class Piece : MonoBehaviour
 
     protected void Rotate(int direction)
     {
-        var originalRotationIndex = rotationIndex;
-        rotationIndex = (rotationIndex + direction) % 4;
+        var originalRotationIndex = RotationIndex;
+        RotationIndex = (RotationIndex + direction) % 4;
 
         ApplyRotationMatrix(direction);
 
-        if (TestWallKicks(rotationIndex, direction))
-        {
+        if (TestWallKicks(RotationIndex, direction))
             return;
-        }
 
-        rotationIndex = originalRotationIndex;
+        RotationIndex = originalRotationIndex;
         ApplyRotationMatrix(-direction);
     }
 
@@ -157,9 +149,7 @@ public abstract class Piece : MonoBehaviour
         for (var i = 0; i < Data.WallKicks.GetLength(1); ++i)
         {
             if (Move(Data.WallKicks[wallKickIndex, i]))
-            {
                 return true;
-            }
         }
 
         return false;
@@ -170,9 +160,7 @@ public abstract class Piece : MonoBehaviour
         var wallKickIndex = newRotationIndex * 2;
 
         if (rotationDirection < 0)
-        {
             wallKickIndex--;
-        }
 
         return (wallKickIndex + Data.WallKicks.GetLength(0)) % Data.WallKicks.GetLength(0);
     }
