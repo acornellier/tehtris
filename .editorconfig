@@ -3,6 +3,9 @@ root = true
 [*]
 indent_style = space
 
+# ReSharper properties
+resharper_csharp_max_line_length = 100
+
 [*.{json,asmdef}]
 indent_size = 2
 
@@ -14,4 +17,4 @@ max_line_length = 120
 trim_trailing_whitespace = true
 charset = utf-8
 
-dotnet_diagnostic.IDE1006.severity = none
+dotnet_diagnostic.ide1006.severity = none

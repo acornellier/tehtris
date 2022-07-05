@@ -6,7 +6,6 @@ public class Ghost : MonoBehaviour
 {
     public Tile tile;
     public Board board;
-    public Piece piece;
     private Vector2Int[] cells;
     private Vector2Int position;
 
@@ -33,26 +32,28 @@ public class Ghost : MonoBehaviour
 
     private void Copy()
     {
-        Array.Copy(piece.Cells, cells, piece.Cells.Length);
+        Array.Copy(board.ActivePiece.Cells, cells, board.ActivePiece.Cells.Length);
     }
 
     private void Drop()
     {
-        var newPosition = piece.Position;
+        var newPosition = board.ActivePiece.Position;
         var bottom = -board.boardSize.y / 2 - 1;
 
-        Utilities.ClearPiece(board.Tilemap, piece);
+        Utilities.ClearPiece(board.Tilemap, board.ActivePiece);
 
         for (var y = newPosition.y; y >= bottom; --y)
         {
             newPosition.y = y;
-            if (!board.IsValidPosition(piece, newPosition))
+            if (!board.IsValidPosition(board.ActivePiece, newPosition))
+            {
                 break;
+            }
 
             position = newPosition;
         }
 
-        Utilities.SetPiece(board.Tilemap, piece);
+        Utilities.SetPiece(board.Tilemap, board.ActivePiece);
     }
 
     private void Set()

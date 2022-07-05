@@ -10,7 +10,7 @@ public class Board : MonoBehaviour
 
     private bool holdingLocked;
 
-    private Piece ActivePiece { get; set; }
+    public Piece ActivePiece { get; private set; }
     public Tilemap Tilemap { get; private set; }
 
     private RectInt Bounds
@@ -30,15 +30,10 @@ public class Board : MonoBehaviour
 
     private void Start()
     {
-        SpawnRandomPiece();
+        SpawnNextPiece();
     }
 
-    private void Update()
-    {
-        if (Input.GetKeyDown(KeyCode.C)) HoldPiece();
-    }
-
-    public void SpawnRandomPiece()
+    public void SpawnNextPiece()
     {
         var nextTetromino = tetrominoQueue.PopNextTetromino();
         SpawnPiece(nextTetromino);
@@ -48,7 +43,9 @@ public class Board : MonoBehaviour
     {
         var spawnPosition = new Vector2Int(-1, Bounds.yMax - 2);
         if (data.tetromino == Tetromino.I)
+        {
             spawnPosition.y -= 1;
+        }
 
         ActivePiece.Initialize(this, spawnPosition, data);
         holdingLocked = false;
@@ -57,7 +54,10 @@ public class Board : MonoBehaviour
 
     private void Clear(Piece piece)
     {
-        foreach (var cell in piece.Cells) Tilemap.SetTile((Vector3Int)(cell + piece.Position), null);
+        foreach (var cell in piece.Cells)
+        {
+            Tilemap.SetTile((Vector3Int)(cell + piece.Position), null);
+        }
     }
 
     public bool IsValidPosition(Piece piece, Vector2Int position)
@@ -83,7 +83,9 @@ public class Board : MonoBehaviour
             .ToList();
 
         if (!linesToClear.Any())
+        {
             return;
+        }
 
         var linesCleared = 0;
         for (var y = linesToClear[0]; y < Bounds.yMax; ++y)
@@ -93,23 +95,29 @@ public class Board : MonoBehaviour
             {
                 var position = new Vector3Int(x, y, 0);
                 if (!clearing)
+                {
                     Tilemap.SetTile(
                         new Vector3Int(x, y - linesCleared, 0),
                         Tilemap.GetTile(position)
                     );
+                }
 
                 Tilemap.SetTile(new Vector3Int(x, y, 0), null);
             }
 
             if (clearing)
+            {
                 linesCleared += 1;
+            }
         }
     }
 
-    private void HoldPiece()
+    public void HoldPiece()
     {
         if (holdingLocked)
+        {
             return;
+        }
 
         var prevHeldPiece = holder.HeldPiece;
 
@@ -117,9 +125,13 @@ public class Board : MonoBehaviour
         Clear(ActivePiece);
 
         if (prevHeldPiece != null)
+        {
             SpawnPiece(prevHeldPiece);
+        }
         else
-            SpawnRandomPiece();
+        {
+            SpawnNextPiece();
+        }
 
         holdingLocked = true;
     }
