@@ -13,7 +13,7 @@ public class Board : MonoBehaviour
     public Piece ActivePiece { get; private set; }
     public Tilemap Tilemap { get; private set; }
 
-    private RectInt Bounds
+    public RectInt Bounds
     {
         get
         {

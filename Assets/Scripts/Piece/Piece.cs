@@ -11,9 +11,9 @@ public abstract class Piece : MonoBehaviour
     private float lockTime; // delayed when moving
     private float maxLockTime; // never delayed
 
-    private int rotationIndex;
     private float stepTime;
-    protected Board Board { get; set; }
+    protected Board Board { get; private set; }
+    public int rotationIndex;
     public Vector2Int Position { get; private set; }
     public Vector2Int[] Cells { get; private set; }
     public TetrominoData Data { get; private set; }

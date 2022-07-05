@@ -9,7 +9,9 @@ public class AiPiece : Piece
 
     protected override void MakeMove()
     {
-        if (false)
+        var boardState = new BoardState(Board);
+
+        if (Random.value < 0.01)
         {
             Board.HoldPiece();
         }
