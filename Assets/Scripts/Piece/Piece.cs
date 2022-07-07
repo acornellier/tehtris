@@ -13,7 +13,15 @@ public abstract class Piece : MonoBehaviour
 
     private float stepTime;
     protected Board Board { get; private set; }
-    public int RotationIndex { get; private set; }
+
+    private int rotationIndex;
+
+    public int RotationIndex
+    {
+        get => rotationIndex;
+        private set => rotationIndex = (value % 4 + 4) % 4;
+    }
+
     public Vector2Int Position { get; private set; }
     public Vector2Int[] Cells { get; private set; }
     public TetrominoData Data { get; private set; }
@@ -97,7 +105,7 @@ public abstract class Piece : MonoBehaviour
     protected void Rotate(int direction)
     {
         var originalRotationIndex = RotationIndex;
-        RotationIndex = (RotationIndex + direction) % 4;
+        RotationIndex += direction;
 
         ApplyRotationMatrix(direction);
 

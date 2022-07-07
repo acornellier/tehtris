@@ -43,13 +43,10 @@ public class Board : MonoBehaviour
     {
         var spawnPosition = new Vector2Int(-1, Bounds.yMax - 2);
         if (data.tetromino == Tetromino.I)
-        {
             spawnPosition.y -= 1;
-        }
 
         ActivePiece.Initialize(this, spawnPosition, data);
         holdingLocked = false;
-        Utilities.SetPiece(Tilemap, ActivePiece);
     }
 
     private void Clear(Piece piece)
@@ -62,7 +59,8 @@ public class Board : MonoBehaviour
 
     public bool IsValidPosition(Piece piece, Vector2Int position)
     {
-        return piece.Cells.All(cell =>
+        return piece.Cells.All(
+            cell =>
             {
                 var tilePosition = position + cell;
                 return Bounds.Contains(tilePosition) && !Tilemap.HasTile((Vector3Int)tilePosition);
@@ -83,9 +81,7 @@ public class Board : MonoBehaviour
             .ToList();
 
         if (!linesToClear.Any())
-        {
             return;
-        }
 
         var linesCleared = 0;
         for (var y = linesToClear[0]; y < Bounds.yMax; ++y)
@@ -95,29 +91,23 @@ public class Board : MonoBehaviour
             {
                 var position = new Vector3Int(x, y, 0);
                 if (!clearing)
-                {
                     Tilemap.SetTile(
                         new Vector3Int(x, y - linesCleared, 0),
                         Tilemap.GetTile(position)
                     );
-                }
 
                 Tilemap.SetTile(new Vector3Int(x, y, 0), null);
             }
 
             if (clearing)
-            {
                 linesCleared += 1;
-            }
         }
     }
 
     public void HoldPiece()
     {
         if (holdingLocked)
-        {
             return;
-        }
 
         var prevHeldPiece = holder.HeldPiece;
 
@@ -125,13 +115,9 @@ public class Board : MonoBehaviour
         Clear(ActivePiece);
 
         if (prevHeldPiece != null)
-        {
             SpawnPiece(prevHeldPiece);
-        }
         else
-        {
             SpawnNextPiece();
-        }
 
         holdingLocked = true;
     }

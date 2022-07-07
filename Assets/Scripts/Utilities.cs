@@ -21,6 +21,9 @@ public static class Utilities
         Vector2Int position = new()
     )
     {
-        foreach (var cell in cells) tilemap.SetTile((Vector3Int)(position + cell), tile);
+        foreach (var cell in cells)
+        {
+            tilemap.SetTile((Vector3Int)(position + cell), tile);
+        }
     }
 }

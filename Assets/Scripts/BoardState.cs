@@ -9,9 +9,19 @@ public class BoardState
     public TetrominoData heldPiece;
 
     public Vector2Int piecePosition;
-    public int pieceRotation;
-    public Vector2Int[] pieceCells;
+    public Vector2Int[] pieceCells = new Vector2Int[4];
     public TetrominoData pieceData;
+
+    private int pieceRotation;
+
+    public int PieceRotation
+    {
+        get => pieceRotation;
+        private set => pieceRotation = value % 4;
+    }
+
+    public int Rows => tiles.GetLength(0);
+    public int Columns => tiles.GetLength(1);
 
     private BoardState()
     {
@@ -27,7 +37,7 @@ public class BoardState
             board.ActivePiece.Position.x - board.Bounds.xMin,
             board.ActivePiece.Position.y - board.Bounds.yMin
         );
-        pieceCells = board.ActivePiece.Cells;
+        pieceCells = (Vector2Int[])board.ActivePiece.Cells.Clone();
         pieceData = board.ActivePiece.Data;
         pieceRotation = board.ActivePiece.RotationIndex;
 
@@ -43,15 +53,17 @@ public class BoardState
 
     public BoardState DeepClone()
     {
-        return new BoardState
+        var newState = new BoardState
         {
             tiles = (bool[,])tiles.Clone(),
             queue = new List<TetrominoData>(queue),
             heldPiece = heldPiece,
             piecePosition = piecePosition,
-            pieceCells = pieceCells,
+            pieceCells = (Vector2Int[])pieceCells.Clone(),
             pieceData = pieceData,
         };
+
+        return newState;
     }
 
     public bool IsValidPosition(Vector2Int position)
@@ -75,7 +87,7 @@ public class BoardState
         {
         }
 
-        // Lock();
+        Lock();
     }
 
     public bool Move(Vector2Int translation)
@@ -91,17 +103,33 @@ public class BoardState
         return true;
     }
 
-    public void Rotate(int direction)
+    public void Rotate(int rotationAmount)
     {
+        var direction = rotationAmount % 4;
+
+        switch (direction)
+        {
+            case 2:
+                Rotate(1);
+                Rotate(1);
+                return;
+            case 3:
+                direction = -1;
+                break;
+        }
+
         var originalRotationIndex = pieceRotation;
-        pieceRotation = (pieceRotation + direction) % 4;
+        PieceRotation += direction;
+
+        if (PieceRotation == originalRotationIndex)
+            return;
 
         ApplyRotationMatrix(direction);
 
-        if (TestWallKicks(pieceRotation, direction))
+        if (TestWallKicks(PieceRotation, direction))
             return;
 
-        pieceRotation = originalRotationIndex;
+        PieceRotation = originalRotationIndex;
         ApplyRotationMatrix(-direction);
     }
 
@@ -139,9 +167,9 @@ public class BoardState
         }
     }
 
-    private bool TestWallKicks(int newRotationIndex, int rotationDirection)
+    private bool TestWallKicks(int newRotationIndex, int direction)
     {
-        var wallKickIndex = GetWallKickIndex(newRotationIndex, rotationDirection);
+        var wallKickIndex = GetWallKickIndex(newRotationIndex, direction);
 
         for (var i = 0; i < pieceData.WallKicks.GetLength(1); ++i)
         {
@@ -152,11 +180,11 @@ public class BoardState
         return false;
     }
 
-    private int GetWallKickIndex(int newRotationIndex, int rotationDirection)
+    private int GetWallKickIndex(int newRotationIndex, int direction)
     {
         var wallKickIndex = newRotationIndex * 2;
 
-        if (rotationDirection < 0)
+        if (direction < 0)
             wallKickIndex--;
 
         return (wallKickIndex + pieceData.WallKicks.GetLength(0)) % pieceData.WallKicks.GetLength(0);
@@ -174,18 +202,15 @@ public class BoardState
                + cell.y * Data.RotationMatrix[3] * direction;
     }
 
-    public float Evaluate()
+    private void Lock()
     {
-        return tiles.GetLength(0) - piecePosition.x;
+        foreach (var cell in pieceCells)
+        {
+            var newPosition = piecePosition + cell;
+            tiles[newPosition.x, newPosition.y] = true;
+        }
     }
 
-    // private void Lock()
-    // {
-    //     Utilities.SetPiece(Board.Tilemap, this);
-    //     Board.ClearLines();
-    //     Board.SpawnNextPiece();
-    // }
-    //
     // public void SpawnNextPiece()
     // {
     //     var nextTetromino = queue.();
