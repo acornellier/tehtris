@@ -713,6 +713,15 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   timeBetweenMoves: 0.5
+  maxHeightMultiplier: -1
+  bumpinessMultiplier: -2
+  holesMultiplier: -20
+  tilesInLastColumnMultiplier: -10
+  clearLessThanFourMultiplier: -5
+  clearFourScore: 100
+  slowDownTurn: 1210
+  debugTurn: -1
+  fastMode: 1
 --- !u!1 &1206666211
 GameObject:
   m_ObjectHideFlags: 0

@@ -92,7 +92,7 @@ public abstract class Piece : MonoBehaviour
     {
         var newPosition = Position + translation;
 
-        var valid = Board.IsValidPosition(this, newPosition);
+        var valid = Board.IsValidPosition(Cells, newPosition);
         if (!valid)
             return false;
 
@@ -102,7 +102,7 @@ public abstract class Piece : MonoBehaviour
         return true;
     }
 
-    protected void Rotate(int direction)
+    protected bool Rotate(int direction)
     {
         var originalRotationIndex = RotationIndex;
         RotationIndex += direction;
@@ -110,10 +110,11 @@ public abstract class Piece : MonoBehaviour
         ApplyRotationMatrix(direction);
 
         if (TestWallKicks(RotationIndex, direction))
-            return;
+            return true;
 
         RotationIndex = originalRotationIndex;
         ApplyRotationMatrix(-direction);
+        return false;
     }
 
     private void ApplyRotationMatrix(int direction)

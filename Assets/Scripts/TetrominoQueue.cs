@@ -30,9 +30,7 @@ public class TetrominoQueue : MonoBehaviour
         NextTetrominos.RemoveAt(0);
 
         if (NextTetrominos.Count < 5)
-        {
             FillQueue();
-        }
 
         Draw();
 
@@ -41,7 +39,7 @@ public class TetrominoQueue : MonoBehaviour
 
     private void FillQueue()
     {
-        var rnd = new Random();
+        var rnd = new Random(0);
         foreach (var _ in datas)
         {
             NextTetrominos.AddRange(datas.OrderBy(_ => rnd.Next()));

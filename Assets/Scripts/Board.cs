@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.Tilemaps;
@@ -22,6 +23,9 @@ public class Board : MonoBehaviour
         }
     }
 
+    private int lineClearCount;
+    private int totalLinesCleared;
+
     private void Awake()
     {
         Tilemap = GetComponentInChildren<Tilemap>();
@@ -45,6 +49,12 @@ public class Board : MonoBehaviour
         if (data.tetromino == Tetromino.I)
             spawnPosition.y -= 1;
 
+        if (!IsValidPosition(data.Cells, spawnPosition))
+        {
+            Application.Quit();
+            UnityEditor.EditorApplication.isPlaying = false;
+        }
+
         ActivePiece.Initialize(this, spawnPosition, data);
         holdingLocked = false;
     }
@@ -57,9 +67,9 @@ public class Board : MonoBehaviour
         }
     }
 
-    public bool IsValidPosition(Piece piece, Vector2Int position)
+    public bool IsValidPosition(IEnumerable<Vector2Int> cells, Vector2Int position)
     {
-        return piece.Cells.All(
+        return cells.All(
             cell =>
             {
                 var tilePosition = position + cell;
@@ -83,6 +93,10 @@ public class Board : MonoBehaviour
         if (!linesToClear.Any())
             return;
 
+        lineClearCount += 1;
+        totalLinesCleared += linesToClear.Count();
+        print($"avg lines cleared per clear {1.0f * totalLinesCleared / lineClearCount}");
+
         var linesCleared = 0;
         for (var y = linesToClear[0]; y < Bounds.yMax; ++y)
         {
@@ -96,7 +110,7 @@ public class Board : MonoBehaviour
                         Tilemap.GetTile(position)
                     );
 
-                Tilemap.SetTile(new Vector3Int(x, y, 0), null);
+                Tilemap.SetTile(position, null);
             }
 
             if (clearing)

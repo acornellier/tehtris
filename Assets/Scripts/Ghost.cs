@@ -45,10 +45,8 @@ public class Ghost : MonoBehaviour
         for (var y = newPosition.y; y >= bottom; --y)
         {
             newPosition.y = y;
-            if (!board.IsValidPosition(board.ActivePiece, newPosition))
-            {
+            if (!board.IsValidPosition(board.ActivePiece.Cells, newPosition))
                 break;
-            }
 
             position = newPosition;
         }
