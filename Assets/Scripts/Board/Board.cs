@@ -29,7 +29,9 @@ public class Board : MonoBehaviour
     private void Awake()
     {
         Tilemap = GetComponentInChildren<Tilemap>();
-        ActivePiece = GetComponentInChildren<Piece>();
+        ActivePiece = GameManager.Instance.mode == GameMode.Ai
+            ? gameObject.AddComponent<AiPiece>()
+            : gameObject.AddComponent<PlayerPiece>();
     }
 
     private void Start()

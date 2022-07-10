@@ -10,12 +10,12 @@ internal struct Goal
 
 public class AiPiece : Piece
 {
-    public float timeBetweenMoves = 0.1f;
+    public float timeBetweenMoves = 0.2f;
     public float maxHeightMultiplier = -1;
-    public float bumpinessMultiplier = -1;
-    public float holesMultiplier = -100;
-    public float tilesInLastColumnMultiplier = -5;
-    public float clearLessThanFourMultiplier = -10;
+    public float bumpinessMultiplier = -2;
+    public float holesMultiplier = -20;
+    public float tilesInLastColumnMultiplier = -10;
+    public float clearLessThanFourMultiplier = -5;
     public float clearFourScore = 100;
 
     private float nextMoveTime;
@@ -25,7 +25,7 @@ public class AiPiece : Piece
     private int turn;
     public int slowDownTurn = -1;
     public int debugTurn = -1;
-    public bool fastMode = true;
+    public bool fastMode = false;
     public int slowDownHeight = 20;
 
     protected override void MakeMove()
