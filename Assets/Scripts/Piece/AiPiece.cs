@@ -22,10 +22,10 @@ public class AiPiece : Piece
     private Goal? currentGoal;
     private bool pendingHold;
 
+    // debug stuff
     private int turn;
+    public bool fastMode;
     public int slowDownTurn = -1;
-    public int debugTurn = -1;
-    public bool fastMode = false;
     public int slowDownHeight = 20;
 
     protected override void MakeMove()
@@ -35,7 +35,6 @@ public class AiPiece : Piece
 
         nextMoveTime = Time.time + timeBetweenMoves;
 
-        // TODO
         if (fastMode) nextMoveTime = Time.time;
 
         if (!currentGoal.HasValue) FindNewGoal();
@@ -46,7 +45,6 @@ public class AiPiece : Piece
     private void FindNewGoal()
     {
         ++turn;
-        print($"turn {turn}");
         if (turn == slowDownTurn) fastMode = false;
 
         var boardState = new BoardState(Board);
@@ -58,15 +56,11 @@ public class AiPiece : Piece
 
         if (bestHoldScore > bestScore)
             pendingHold = true;
-
-        if (!currentGoal.HasValue)
-            print("No valid moves! kinda sus tbh");
     }
 
     private float FindBestGoalsForState(BoardState boardState, float initialBestScore)
     {
         var bestGoalScore = initialBestScore;
-        var bestState = new BoardState(Board);
         var curHoleScore = EvaluateHoleScore(boardState);
 
         for (var rotationIndex = 0; rotationIndex <= 3; ++rotationIndex)
@@ -87,7 +81,6 @@ public class AiPiece : Piece
                     continue;
 
                 bestGoalScore = score;
-                bestState = foo;
 
                 currentGoal = new Goal()
                 {
@@ -96,10 +89,6 @@ public class AiPiece : Piece
                 };
             }
         }
-
-        // TODO
-        if (bestGoalScore > initialBestScore)
-            EvaluateBoard(bestState, curHoleScore, true);
 
         return bestGoalScore;
     }
@@ -138,7 +127,6 @@ public class AiPiece : Piece
         else if (goal.Rotation != RotationIndex)
             rotateSuccess |= Rotate(1);
 
-        // TODO
         if (fastMode && (moveSuccess || rotateSuccess))
             GetToGoal();
     }
@@ -170,14 +158,8 @@ public class AiPiece : Piece
         else
             score += clearedRows * clearLessThanFourMultiplier;
 
-        // TODO
-        if (yes && holeScore > curHoldScore)
-            score += 0;
-
-        if (maxHeight > slowDownHeight)
+        if (fastMode && maxHeight > slowDownHeight)
             fastMode = false;
-        if (turn == debugTurn)
-            print($"debug turn {turn}");
 
         return score;
     }

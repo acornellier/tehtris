@@ -29,7 +29,7 @@ public class Board : MonoBehaviour
     private void Awake()
     {
         Tilemap = GetComponentInChildren<Tilemap>();
-        ActivePiece = GameManager.Instance.mode == GameMode.Ai
+        ActivePiece = GameManager.Instance.Mode == GameMode.Ai
             ? gameObject.AddComponent<AiPiece>()
             : gameObject.AddComponent<PlayerPiece>();
     }
@@ -52,10 +52,7 @@ public class Board : MonoBehaviour
             spawnPosition.y -= 1;
 
         if (!IsValidPosition(data.Cells, spawnPosition))
-        {
-            Application.Quit();
-            UnityEditor.EditorApplication.isPlaying = false;
-        }
+            GameUtilities.Quit();
 
         ActivePiece.Initialize(this, spawnPosition, data);
         holdingLocked = false;

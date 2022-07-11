@@ -1,19 +1,38 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine.SceneManagement;
 
-public class GameManager : MonoBehaviour
+public class GameManager : Singleton<GameManager>
 {
-    public static GameManager Instance;
+    private GameMode mode = GameMode.MainMenu;
 
-    public GameMode mode = GameMode.Solo;
-
-    private void Awake()
+    public GameMode Mode
     {
-        Instance = this;
+        get => mode;
+        set
+        {
+            mode = value;
+            paused = false;
+            SceneManager.LoadScene("Tetris");
+        }
+    }
+
+    private bool paused;
+    public static event Action<bool> OnGamePauseChange;
+
+    public bool Paused
+    {
+        get => paused;
+        set
+        {
+            paused = value;
+            OnGamePauseChange?.Invoke(value);
+        }
     }
 }
 
 public enum GameMode
 {
+    MainMenu,
     Solo,
     Ai,
 }

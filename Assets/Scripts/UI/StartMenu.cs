@@ -1,17 +1,19 @@
 using UnityEngine;
-using UnityEngine.SceneManagement;
 
 public class StartMenu : MonoBehaviour
 {
     public void PlayGame()
     {
-        GameManager.Instance.mode = GameMode.Solo;
-        SceneManager.LoadScene("Tetris");
+        GameManager.Instance.Mode = GameMode.Solo;
     }
 
     public void WatchAi()
     {
-        GameManager.Instance.mode = GameMode.Ai;
-        SceneManager.LoadScene("Tetris");
+        GameManager.Instance.Mode = GameMode.Ai;
+    }
+
+    public void Quit()
+    {
+        GameUtilities.Quit();
     }
 }

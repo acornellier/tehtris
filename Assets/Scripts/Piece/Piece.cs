@@ -26,6 +26,21 @@ public abstract class Piece : MonoBehaviour
     public Vector2Int[] Cells { get; private set; }
     public TetrominoData Data { get; private set; }
 
+    private void Awake()
+    {
+        GameManager.OnGamePauseChange += OnGamePauseChange;
+    }
+
+    private void OnDestroy()
+    {
+        GameManager.OnGamePauseChange -= OnGamePauseChange;
+    }
+
+    private void OnGamePauseChange(bool paused)
+    {
+        enabled = !paused;
+    }
+
     private void Update()
     {
         Utilities.ClearPiece(Board.Tilemap, this);
