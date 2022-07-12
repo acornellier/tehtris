@@ -91,7 +91,7 @@ public abstract class Piece : MonoBehaviour
     private void HandleLocking()
     {
         if (locking && (Time.time > lockTime || Time.time > maxLockTime))
-            Lock();
+            Board.LockPiece();
     }
 
     protected void HardDrop()
@@ -100,7 +100,7 @@ public abstract class Piece : MonoBehaviour
         {
         }
 
-        Lock();
+        Board.LockPiece();
     }
 
     protected bool Move(Vector2Int translation)
@@ -199,12 +199,5 @@ public abstract class Piece : MonoBehaviour
     {
         return cell.x * global::Data.RotationMatrix[2] * direction
                + cell.y * global::Data.RotationMatrix[3] * direction;
-    }
-
-    private void Lock()
-    {
-        Utilities.SetPiece(Board.Tilemap, this);
-        Board.ClearLines();
-        Board.SpawnNextPiece();
     }
 }

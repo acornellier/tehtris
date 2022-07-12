@@ -8,11 +8,13 @@ public class Board : MonoBehaviour
     public Vector2Int boardSize = new(10, 20);
     public Holder holder;
     public TetrominoQueue tetrominoQueue;
+    public GameObject gameOverMenu;
 
     private bool holdingLocked;
 
     public Piece ActivePiece { get; private set; }
     public Tilemap Tilemap { get; private set; }
+    private AudioSource audioSource;
 
     public RectInt Bounds
     {
@@ -32,10 +34,20 @@ public class Board : MonoBehaviour
         ActivePiece = GameManager.Instance.Mode == GameMode.Ai
             ? gameObject.AddComponent<AiPiece>()
             : gameObject.AddComponent<PlayerPiece>();
+
+        audioSource = GetComponent<AudioSource>();
     }
 
     private void Start()
     {
+        SpawnNextPiece();
+    }
+
+    public void LockPiece()
+    {
+        audioSource.Play();
+        Utilities.SetPiece(Tilemap, ActivePiece);
+        ClearLines();
         SpawnNextPiece();
     }
 
@@ -52,7 +64,10 @@ public class Board : MonoBehaviour
             spawnPosition.y -= 1;
 
         if (!IsValidPosition(data.Cells, spawnPosition))
-            GameUtilities.Quit();
+        {
+            gameOverMenu.SetActive(true);
+
+        }
 
         ActivePiece.Initialize(this, spawnPosition, data);
         holdingLocked = false;

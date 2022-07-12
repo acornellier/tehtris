@@ -39,7 +39,7 @@ public class TetrominoQueue : MonoBehaviour
 
     private void FillQueue()
     {
-        var rnd = new Random(0);
+        var rnd = new Random();
         foreach (var _ in datas)
         {
             NextTetrominos.AddRange(datas.OrderBy(_ => rnd.Next()));

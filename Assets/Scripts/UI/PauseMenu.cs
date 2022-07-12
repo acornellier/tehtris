@@ -1,10 +1,11 @@
-using System;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
 public class PauseMenu : MonoBehaviour
 {
+    public GameObject pausePanel;
     public GameObject pauseMenuUi;
+    public GameObject optionsMenuUi;
 
     private void Awake()
     {
@@ -30,7 +31,14 @@ public class PauseMenu : MonoBehaviour
 
     private void PauseCallback()
     {
+        pausePanel.SetActive(true);
         pauseMenuUi.SetActive(true);
+        optionsMenuUi.SetActive(false);
+    }
+
+    private void ResumeCallback()
+    {
+        pausePanel.SetActive(false);
     }
 
     public void Resume()
@@ -38,9 +46,10 @@ public class PauseMenu : MonoBehaviour
         GameManager.Instance.Paused = false;
     }
 
-    private void ResumeCallback()
+    public void Options()
     {
         pauseMenuUi.SetActive(false);
+        optionsMenuUi.SetActive(true);
     }
 
     public void MainMenu()
