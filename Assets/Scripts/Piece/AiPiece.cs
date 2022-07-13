@@ -4,8 +4,8 @@ using UnityEngine;
 
 internal struct Goal
 {
-    public Vector2Int Position;
-    public int Rotation;
+    public Vector2Int position;
+    public int rotation;
 }
 
 public class AiPiece : Piece
@@ -74,7 +74,6 @@ public class AiPiece : Piece
                     continue;
 
                 var newPosition = boardStateClone.PiecePosition;
-                var foo = boardStateClone.DeepClone();
 
                 var score = EvaluateBoard(boardStateClone, curHoleScore);
                 if (score <= bestGoalScore)
@@ -82,10 +81,10 @@ public class AiPiece : Piece
 
                 bestGoalScore = score;
 
-                currentGoal = new Goal()
+                currentGoal = new Goal
                 {
-                    Position = newPosition,
-                    Rotation = rotationIndex,
+                    position = newPosition,
+                    rotation = rotationIndex,
                 };
             }
         }
@@ -106,9 +105,9 @@ public class AiPiece : Piece
         }
 
         var goal = currentGoal.Value;
-        var convertedX = goal.Position.x + Board.Bounds.xMin;
+        var convertedX = goal.position.x + Board.Bounds.xMin;
 
-        if (convertedX == Position.x && goal.Rotation == RotationIndex)
+        if (convertedX == Position.x && goal.rotation == RotationIndex)
         {
             HardDrop();
             currentGoal = null;
@@ -122,16 +121,16 @@ public class AiPiece : Piece
             moveSuccess |= Move(Vector2Int.right);
 
         var rotateSuccess = false;
-        if (goal.Rotation - RotationIndex >= 3)
+        if (goal.rotation - RotationIndex >= 3)
             rotateSuccess |= Rotate(-1);
-        else if (goal.Rotation != RotationIndex)
+        else if (goal.rotation != RotationIndex)
             rotateSuccess |= Rotate(1);
 
         if (fastMode && (moveSuccess || rotateSuccess))
             GetToGoal();
     }
 
-    private float EvaluateBoard(BoardState boardState, int curHoldScore, bool yes = false)
+    private float EvaluateBoard(BoardState boardState, int curHoldScore)
     {
         boardState.HardDrop();
 

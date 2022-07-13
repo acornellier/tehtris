@@ -4,10 +4,10 @@ using UnityEngine;
 
 public class BoardState
 {
-    public bool[,] Tiles;
+    public bool[,] Tiles { get; private set; }
     private List<TetrominoData> queue;
     private TetrominoData heldPiece;
-    private bool holdingLocked = false;
+    private bool holdingLocked;
 
     public Vector2Int PiecePosition { get; private set; }
     private Vector2Int[] pieceCells = new Vector2Int[4];

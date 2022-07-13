@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-public class GameUtilities
+public static class GameUtilities
 {
     public static void Quit()
     {

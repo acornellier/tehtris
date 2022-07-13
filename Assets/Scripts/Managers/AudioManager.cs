@@ -14,8 +14,13 @@ public class AudioManager : Singleton<AudioManager>
 
     [SerializeField] private AudioMixer masterMixer;
 
+    // ReSharper disable once NotAccessedField.Local
     [SerializeField] private AudioMixerGroup masterGroup;
+
+    // ReSharper disable once NotAccessedField.Local
     [SerializeField] private AudioMixerGroup musicGroup;
+
+    // ReSharper disable once NotAccessedField.Local
     [SerializeField] private AudioMixerGroup soundGroup;
 
     protected override void OnStart()

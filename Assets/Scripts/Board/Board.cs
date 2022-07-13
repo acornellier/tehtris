@@ -51,7 +51,7 @@ public class Board : MonoBehaviour
         SpawnNextPiece();
     }
 
-    public void SpawnNextPiece()
+    private void SpawnNextPiece()
     {
         var nextTetromino = tetrominoQueue.PopNextTetromino();
         SpawnPiece(nextTetromino);
@@ -64,10 +64,7 @@ public class Board : MonoBehaviour
             spawnPosition.y -= 1;
 
         if (!IsValidPosition(data.Cells, spawnPosition))
-        {
             gameOverMenu.SetActive(true);
-
-        }
 
         ActivePiece.Initialize(this, spawnPosition, data);
         holdingLocked = false;
@@ -92,7 +89,7 @@ public class Board : MonoBehaviour
         );
     }
 
-    public void ClearLines()
+    private void ClearLines()
     {
         var linesToClear = Enumerable
             .Range(Bounds.yMin, Bounds.size.y)
@@ -108,7 +105,7 @@ public class Board : MonoBehaviour
             return;
 
         lineClearCount += 1;
-        totalLinesCleared += linesToClear.Count();
+        totalLinesCleared += linesToClear.Count;
         print($"avg lines cleared per clear {1.0f * totalLinesCleared / lineClearCount}");
 
         var linesCleared = 0;
