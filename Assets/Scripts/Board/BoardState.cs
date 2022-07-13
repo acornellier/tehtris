@@ -1,25 +1,36 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using Unity.VisualScripting;
 using UnityEngine;
+using UnityEngine.Tilemaps;
 
 public class BoardState
 {
-    public bool[,] Tiles { get; private set; }
-    private List<TetrominoData> queue;
-    private TetrominoData heldPiece;
-    private bool holdingLocked;
+    private const float LockDelay = 0.5f;
+    private const float MaxLockDelay = 5f;
+    private const float StepDelay = 1f;
 
+    public Tile[,] Tiles { get; private set; }
+    public List<TetrominoData> Queue { get; private set; }
+    public TetrominoData HeldPiece { get; private set; }
     public Vector2Int PiecePosition { get; private set; }
-    private Vector2Int[] pieceCells = new Vector2Int[4];
-    private TetrominoData pieceData;
+    public Vector2Int[] PieceCells { get; private set; } = new Vector2Int[4];
+    public TetrominoData PieceData { get; private set; }
 
     private int pieceRotation;
 
     public int PieceRotation
     {
         get => pieceRotation;
-        private set => pieceRotation = value % 4;
+        private set => pieceRotation = (value % 4 + 4) % 4;
     }
+
+    public bool gameOver;
+    private bool holdingLocked;
+    private float stepTime;
+    private bool locking;
+    private float lockTime; // delayed when moving
+    private float maxLockTime; // never delayed
 
     public int Columns => Tiles.GetLength(0);
     public int Rows => Tiles.GetLength(1);
@@ -28,48 +39,97 @@ public class BoardState
     {
     }
 
-    public BoardState(Board board)
+    public BoardState(Vector2Int boardSize, IEnumerable<TetrominoData> queue)
     {
-        Tiles = new bool[board.boardSize.x, board.boardSize.y];
-        queue = new List<TetrominoData>(board.tetrominoQueue.NextTetrominos);
-        heldPiece = board.holder.HeldPiece;
+        Tiles = new Tile[boardSize.x, boardSize.y];
+        UpdateQueue(queue);
+        SpawnNextPiece();
+    }
 
-        PiecePosition = new Vector2Int(
-            board.ActivePiece.Position.x - board.Bounds.xMin,
-            board.ActivePiece.Position.y - board.Bounds.yMin
-        );
-        pieceCells = (Vector2Int[])board.ActivePiece.Cells.Clone();
-        pieceData = board.ActivePiece.Data;
-        pieceRotation = board.ActivePiece.RotationIndex;
-
-        for (var x = board.Bounds.xMin; x < board.Bounds.xMax; ++x)
-        {
-            for (var y = board.Bounds.yMin; y < board.Bounds.yMax; ++y)
-            {
-                var position = new Vector3Int(x, y, 0);
-                Tiles[x - board.Bounds.xMin, y - board.Bounds.yMin] = board.Tilemap.HasTile(position);
-            }
-        }
+    public void UpdateQueue(IEnumerable<TetrominoData> newQueue)
+    {
+        Queue = new List<TetrominoData>(newQueue);
     }
 
     public BoardState DeepClone()
     {
         var newState = new BoardState
         {
-            Tiles = (bool[,])Tiles.Clone(),
-            queue = new List<TetrominoData>(queue),
-            heldPiece = heldPiece,
+            Tiles = (Tile[,])Tiles.Clone(),
+            Queue = new List<TetrominoData>(Queue),
+            HeldPiece = HeldPiece,
             PiecePosition = PiecePosition,
-            pieceCells = (Vector2Int[])pieceCells.Clone(),
-            pieceData = pieceData,
+            PieceRotation = PieceRotation,
+            PieceCells = (Vector2Int[])PieceCells.Clone(),
+            PieceData = PieceData,
         };
 
         return newState;
     }
 
-    private bool IsValidPosition(Vector2Int position)
+    public MoveResults MakeMove(Move move)
     {
-        return pieceCells.All(
+        var moveResults = new MoveResults();
+        if (move.hold)
+        {
+            HoldPiece();
+            moveResults.held = true;
+        }
+        else if (move.hardDrop)
+        {
+            moveResults.locked = true;
+            moveResults.linesCleared = HardDrop();
+        }
+        else
+        {
+            if (move.direction != Move.Direction.None)
+                MoveTranslation(Move.DirectionToTranslation(move.direction));
+
+            if (move.rotation != Move.Rotation.None)
+                Rotate(Move.RotationToAmount(move.rotation));
+
+            HandleStep();
+            HandleLocking(moveResults);
+        }
+
+        return moveResults;
+    }
+
+    private void HandleStep()
+    {
+        if (Time.time < stepTime)
+            return;
+
+        stepTime += StepDelay;
+        var success = MoveTranslation(Vector2Int.down);
+
+        if (success)
+        {
+            locking = false;
+        }
+        else if (!locking)
+        {
+            locking = true;
+            lockTime = Time.time + LockDelay;
+            maxLockTime = Time.time + MaxLockDelay;
+        }
+    }
+
+    private void HandleLocking(MoveResults moveResults)
+    {
+        if (!locking || (Time.time <= lockTime && Time.time <= maxLockTime))
+        {
+            moveResults.locked = false;
+            return;
+        }
+
+        var linesCleared = Lock();
+        moveResults.linesCleared = linesCleared;
+    }
+
+    public bool IsValidPosition(Vector2Int position)
+    {
+        return PieceCells.All(
             cell =>
             {
                 var tilePosition = position + cell;
@@ -82,16 +142,16 @@ public class BoardState
         );
     }
 
-    public void HardDrop()
+    public int HardDrop(bool skipSpawn = false)
     {
-        while (Move(Vector2Int.down))
+        while (MoveTranslation(Vector2Int.down))
         {
         }
 
-        Lock();
+        return Lock(skipSpawn);
     }
 
-    public bool Move(Vector2Int translation)
+    public bool MoveTranslation(Vector2Int translation)
     {
         var newPosition = PiecePosition + translation;
 
@@ -100,6 +160,8 @@ public class BoardState
             return false;
 
         PiecePosition = newPosition;
+        if (translation.x != 0)
+            lockTime += LockDelay;
 
         return true;
     }
@@ -136,14 +198,14 @@ public class BoardState
 
     private void ApplyRotationMatrix(int direction)
     {
-        for (var i = 0; i < pieceCells.Length; i++)
+        for (var i = 0; i < PieceCells.Length; i++)
         {
-            Vector2 cell = pieceCells[i];
+            Vector2 cell = PieceCells[i];
 
             int x;
             int y;
 
-            switch (pieceData.tetromino)
+            switch (PieceData.tetromino)
             {
                 case Tetromino.I:
                 case Tetromino.O:
@@ -164,7 +226,7 @@ public class BoardState
                     break;
             }
 
-            pieceCells[i] = new Vector2Int(x, y);
+            PieceCells[i] = new Vector2Int(x, y);
         }
     }
 
@@ -172,9 +234,9 @@ public class BoardState
     {
         var wallKickIndex = GetWallKickIndex(newRotationIndex, direction);
 
-        for (var i = 0; i < pieceData.WallKicks.GetLength(1); ++i)
+        for (var i = 0; i < PieceData.WallKicks.GetLength(1); ++i)
         {
-            if (Move(pieceData.WallKicks[wallKickIndex, i]))
+            if (MoveTranslation(PieceData.WallKicks[wallKickIndex, i]))
                 return true;
         }
 
@@ -188,7 +250,7 @@ public class BoardState
         if (direction < 0)
             wallKickIndex--;
 
-        return (wallKickIndex + pieceData.WallKicks.GetLength(0)) % pieceData.WallKicks.GetLength(0);
+        return (wallKickIndex + PieceData.WallKicks.GetLength(0)) % PieceData.WallKicks.GetLength(0);
     }
 
     private static float RotateX(Vector3 cell, int direction)
@@ -203,19 +265,26 @@ public class BoardState
                + cell.y * Data.RotationMatrix[3] * direction;
     }
 
-    private void Lock()
+    private int Lock(bool skipSpawn = false)
     {
-        foreach (var cell in pieceCells)
+        foreach (var cell in PieceCells)
         {
             var newPosition = PiecePosition + cell;
-            Tiles[newPosition.x, newPosition.y] = true;
+            Tiles[newPosition.x, newPosition.y] = PieceData.tile;
         }
+
+        var linesCleared = ClearLines();
+
+        if (!skipSpawn)
+            SpawnNextPiece();
+
+        return linesCleared;
     }
 
     private void SpawnNextPiece()
     {
-        var nextTetromino = queue[0];
-        queue.RemoveAt(0);
+        var nextTetromino = Queue[0];
+        Queue.RemoveAt(0);
         SpawnPiece(nextTetromino);
     }
 
@@ -226,29 +295,35 @@ public class BoardState
             spawnPosition.y -= 1;
 
         PiecePosition = spawnPosition;
-        pieceCells = (Vector2Int[])data.Cells.Clone();
-        pieceData = data;
+        PieceCells = (Vector2Int[])data.Cells.Clone();
+        PieceData = data;
         PieceRotation = 0;
-
+        stepTime = Time.time + StepDelay;
+        locking = false;
         holdingLocked = false;
+
+        if (!IsValidPosition(spawnPosition))
+            gameOver = true;
     }
 
     public void HoldPiece()
     {
         if (holdingLocked) return;
 
-        var prevHeldPiece = heldPiece;
+        var prevHeldPiece = HeldPiece;
 
-        heldPiece = pieceData;
-        pieceData = heldPiece;
+        HeldPiece = PieceData;
+        PieceData = HeldPiece;
 
         if (prevHeldPiece != null)
             SpawnPiece(prevHeldPiece);
         else
             SpawnNextPiece();
+
+        holdingLocked = true;
     }
 
-    public void ClearLines()
+    private int ClearLines()
     {
         var linesToClear = Enumerable
             .Range(0, Rows)
@@ -261,7 +336,7 @@ public class BoardState
             .ToList();
 
         if (!linesToClear.Any())
-            return;
+            return 0;
 
         var linesCleared = 0;
         for (var y = linesToClear[0]; y < Rows; ++y)
@@ -272,11 +347,13 @@ public class BoardState
                 if (!clearing)
                     Tiles[x, y - linesCleared] = Tiles[x, y];
 
-                Tiles[x, y] = false;
+                Tiles[x, y] = null;
             }
 
             if (clearing)
                 linesCleared += 1;
         }
+
+        return linesCleared;
     }
 }

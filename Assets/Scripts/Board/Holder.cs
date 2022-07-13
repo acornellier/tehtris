@@ -10,11 +10,4 @@ public class Holder : MonoBehaviour
     {
         tilemap = GetComponentInChildren<Tilemap>();
     }
-
-    public void SetHeldPiece(TetrominoData data)
-    {
-        tilemap.ClearAllTiles();
-        HeldPiece = data;
-        Utilities.SetCells(tilemap, HeldPiece.Cells, HeldPiece.tile);
-    }
 }

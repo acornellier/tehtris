@@ -1,22 +1,20 @@
-using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 using UnityEngine.Tilemaps;
 
 public class Board : MonoBehaviour
 {
     public Vector2Int boardSize = new(10, 20);
-    public Holder holder;
+    public Tilemap tilemap;
+    public Tilemap holderTilemap;
+    public Tile ghostTile;
     public TetrominoQueue tetrominoQueue;
     public GameObject gameOverMenu;
 
-    private bool holdingLocked;
-
-    public Piece ActivePiece { get; private set; }
-    public Tilemap Tilemap { get; private set; }
     private AudioSource audioSource;
+    private BoardState state;
+    private Controller controller;
 
-    public RectInt Bounds
+    private RectInt Bounds
     {
         get
         {
@@ -30,120 +28,120 @@ public class Board : MonoBehaviour
 
     private void Awake()
     {
-        Tilemap = GetComponentInChildren<Tilemap>();
-        ActivePiece = GameManager.Instance.Mode == GameMode.Ai
-            ? gameObject.AddComponent<AiPiece>()
-            : gameObject.AddComponent<PlayerPiece>();
+        controller = GameManager.Instance.Mode == GameMode.Ai
+            ? GetComponent<AiController>()
+            : GetComponent<PlayerController>();
 
         audioSource = GetComponent<AudioSource>();
+
+        GameManager.OnGamePauseChange += OnGamePauseChange;
+    }
+
+    private void OnDestroy()
+    {
+        GameManager.OnGamePauseChange -= OnGamePauseChange;
+    }
+
+    private void OnGamePauseChange(bool paused)
+    {
+        enabled = !paused;
     }
 
     private void Start()
     {
-        SpawnNextPiece();
+        state = new BoardState(boardSize, tetrominoQueue.NextTetrominos);
+        tetrominoQueue.UpdateQueue(state.Queue);
     }
 
-    public void LockPiece()
+    private void Update()
     {
-        audioSource.Play();
-        Utilities.SetPiece(Tilemap, ActivePiece);
-        ClearLines();
-        SpawnNextPiece();
-    }
+        state.UpdateQueue(tetrominoQueue.NextTetrominos);
 
-    private void SpawnNextPiece()
-    {
-        var nextTetromino = tetrominoQueue.PopNextTetromino();
-        SpawnPiece(nextTetromino);
-    }
+        var move = controller.GetMove(state.DeepClone());
+        var moveResults = state.MakeMove(move);
 
-    private void SpawnPiece(TetrominoData data)
-    {
-        var spawnPosition = new Vector2Int(-1, Bounds.yMax - 2);
-        if (data.tetromino == Tetromino.I)
-            spawnPosition.y -= 1;
-
-        if (!IsValidPosition(data.Cells, spawnPosition))
+        if (state.gameOver)
+        {
             gameOverMenu.SetActive(true);
+            enabled = false;
+            return;
+        }
 
-        ActivePiece.Initialize(this, spawnPosition, data);
-        holdingLocked = false;
+        if (moveResults.held || moveResults.locked)
+        {
+            controller.NotifyNewPiece();
+            tetrominoQueue.UpdateQueue(state.Queue);
+        }
+
+        if (moveResults.locked && !controller.Muted)
+            audioSource.Play();
+
+        if (moveResults.linesCleared > 0)
+        {
+            lineClearCount += 1;
+            totalLinesCleared += moveResults.linesCleared;
+            print($"avg lines cleared per clear {1.0f * totalLinesCleared / lineClearCount}");
+        }
+
+        UpdateTilemaps();
     }
 
-    private void Clear(Piece piece)
+    private void UpdateTilemaps()
     {
-        foreach (var cell in piece.Cells)
+        tilemap.ClearAllTiles();
+
+        SetBaseTiles();
+        SetGhostTiles();
+        SetPieceTiles();
+        SetHolderTiles();
+    }
+
+    private void SetBaseTiles()
+    {
+        for (var x = 0; x < state.Columns; ++x)
         {
-            Tilemap.SetTile((Vector3Int)(cell + piece.Position), null);
+            for (var y = 0; y < state.Rows; ++y)
+            {
+                tilemap.SetTile(new Vector3Int(x + Bounds.xMin, y + Bounds.yMin, 0), state.Tiles[x, y]);
+            }
         }
     }
 
-    public bool IsValidPosition(IEnumerable<Vector2Int> cells, Vector2Int position)
+    private void SetGhostTiles()
     {
-        return cells.All(
-            cell =>
-            {
-                var tilePosition = position + cell;
-                return Bounds.Contains(tilePosition) && !Tilemap.HasTile((Vector3Int)tilePosition);
-            }
-        );
-    }
+        var position = state.PiecePosition;
 
-    private void ClearLines()
-    {
-        var linesToClear = Enumerable
-            .Range(Bounds.yMin, Bounds.size.y)
-            .Where(
-                y =>
-                    Enumerable
-                        .Range(Bounds.xMin, Bounds.size.x)
-                        .All(x => Tilemap.HasTile(new Vector3Int(x, y, 0)))
-            )
-            .ToList();
-
-        if (!linesToClear.Any())
-            return;
-
-        lineClearCount += 1;
-        totalLinesCleared += linesToClear.Count;
-        print($"avg lines cleared per clear {1.0f * totalLinesCleared / lineClearCount}");
-
-        var linesCleared = 0;
-        for (var y = linesToClear[0]; y < Bounds.yMax; ++y)
+        for (var y = position.y; y >= -1; --y)
         {
-            var clearing = linesToClear.Contains(y);
-            for (var x = Bounds.xMin; x < Bounds.xMax; ++x)
-            {
-                var position = new Vector3Int(x, y, 0);
-                if (!clearing)
-                    Tilemap.SetTile(
-                        new Vector3Int(x, y - linesCleared, 0),
-                        Tilemap.GetTile(position)
-                    );
+            var testPosition = position;
+            testPosition.y = y;
+            if (!state.IsValidPosition(testPosition))
+                break;
 
-                Tilemap.SetTile(position, null);
-            }
-
-            if (clearing)
-                linesCleared += 1;
+            position = testPosition;
         }
+
+        SetPieceCells(ghostTile, position);
     }
 
-    public void HoldPiece()
+    private void SetPieceTiles()
     {
-        if (holdingLocked)
+        SetPieceCells(state.PieceData.tile, state.PiecePosition);
+    }
+
+    private void SetPieceCells(Tile tile, Vector2Int position)
+    {
+        position.x += Bounds.xMin;
+        position.y += Bounds.yMin;
+        Utilities.SetCells(tilemap, state.PieceCells, tile, position);
+    }
+
+    private void SetHolderTiles()
+    {
+        if (state.HeldPiece == null)
             return;
 
-        var prevHeldPiece = holder.HeldPiece;
-
-        holder.SetHeldPiece(ActivePiece.Data);
-        Clear(ActivePiece);
-
-        if (prevHeldPiece != null)
-            SpawnPiece(prevHeldPiece);
-        else
-            SpawnNextPiece();
-
-        holdingLocked = true;
+        holderTilemap.ClearAllTiles();
+        Utilities.SetCells(holderTilemap, state.HeldPiece.Cells, state.HeldPiece.tile);
     }
 }

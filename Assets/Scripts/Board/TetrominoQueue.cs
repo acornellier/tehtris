@@ -7,7 +7,7 @@ using Random = System.Random;
 public class TetrominoQueue : MonoBehaviour
 {
     public List<TetrominoData> datas;
-    public List<TetrominoData> NextTetrominos { get; } = new();
+    public List<TetrominoData> NextTetrominos { get; private set; } = new();
     private Tilemap tilemap;
 
     private void Awake()
@@ -19,35 +19,30 @@ public class TetrominoQueue : MonoBehaviour
             data.Initialize();
         }
 
-        FillQueue();
-    }
-
-    public TetrominoData PopNextTetromino()
-    {
-        tilemap.ClearAllTiles();
-
-        var nextTetromino = NextTetrominos[0];
-        NextTetrominos.RemoveAt(0);
-
-        if (NextTetrominos.Count < 5)
-            FillQueue();
-
+        FillQueueAndDraw();
         Draw();
-
-        return nextTetromino;
     }
 
-    private void FillQueue()
+    public void UpdateQueue(IEnumerable<TetrominoData> newQueue)
     {
+        NextTetrominos = new List<TetrominoData>(newQueue);
+        FillQueueAndDraw();
+        Draw();
+    }
+
+    private void FillQueueAndDraw()
+    {
+        if (NextTetrominos.Count >= 5)
+            return;
+
         var rnd = new Random();
-        foreach (var _ in datas)
-        {
-            NextTetrominos.AddRange(datas.OrderBy(_ => rnd.Next()));
-        }
+        NextTetrominos.AddRange(datas.OrderBy(_ => rnd.Next()));
     }
 
     private void Draw()
     {
+        tilemap.ClearAllTiles();
+
         for (var i = 0; i < 5 && i < NextTetrominos.Count; ++i)
         {
             var tetromino = NextTetrominos[i];

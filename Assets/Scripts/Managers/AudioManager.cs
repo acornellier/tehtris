@@ -40,7 +40,6 @@ public class AudioManager : Singleton<AudioManager>
     /// <param name="value">From 0 to 1</param>
     public void SetVolume(AudioChannel channel, float value)
     {
-        Debug.Log($"SetVolume {channel} {value} {ConvertValueToVolume(value)}");
         masterMixer.SetFloat(channel + "Volume", ConvertValueToVolume(value));
         PlayerPrefs.SetFloat(channel + "Volume", value);
     }
