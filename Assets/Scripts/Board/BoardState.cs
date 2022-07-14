@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.Tilemaps;
 
@@ -168,10 +167,12 @@ public class BoardState
 
     public void Rotate(int rotationAmount)
     {
-        var direction = rotationAmount % 4;
+        var direction = (rotationAmount % 4 + 4) % 4;
 
         switch (direction)
         {
+            case 0:
+                return;
             case 2:
                 Rotate(1);
                 Rotate(1);

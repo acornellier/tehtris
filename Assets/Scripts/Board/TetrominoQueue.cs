@@ -35,7 +35,7 @@ public class TetrominoQueue : MonoBehaviour
         if (NextTetrominos.Count >= 5)
             return;
 
-        var rnd = new Random();
+        var rnd = new Random(0);
         NextTetrominos.AddRange(datas.OrderBy(_ => rnd.Next()));
     }
 

@@ -1,10 +1,9 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
 
-public class VolumeControl : MonoBehaviour
+public class SpeedSlider : MonoBehaviour
 {
     private Slider slider;
-    [SerializeField] private AudioManager.AudioChannel channel = AudioManager.AudioChannel.Master;
 
     private void Awake()
     {
@@ -16,11 +15,11 @@ public class VolumeControl : MonoBehaviour
     {
         slider.minValue = 0;
         slider.maxValue = 1;
-        slider.value = AudioManager.GetChannelValue(channel);
+        slider.value = GameManager.Instance.AiTimeBetweenMoves;
     }
 
-    private void HandleSliderValueChanged(float value)
+    private static void HandleSliderValueChanged(float value)
     {
-        AudioManager.Instance.SetVolume(channel, value);
+        GameManager.Instance.AiTimeBetweenMoves = 1 - value;
     }
 }

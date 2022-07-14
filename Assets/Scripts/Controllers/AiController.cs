@@ -1,27 +1,27 @@
 ﻿using System;
-using System.Linq;
-using Unity.VisualScripting;
 using UnityEngine;
 
-internal struct Goal
+internal class Goal
 {
+    public bool hold;
     public int xPosition;
     public int rotation;
 }
 
 public class AiController : Controller
 {
+    public int maxDepth = 1;
     public float timeBetweenMoves = 0.2f;
     public float maxHeightMultiplier = -1;
     public float bumpinessMultiplier = -2;
     public float holesMultiplier = -20;
-    public float tilesInLastColumnMultiplier = -10;
+    public float lastColumnHeightMultiplier = -10;
+
     public float clearLessThanFourMultiplier = -5;
     public float clearFourScore = 100;
 
     private float nextMoveTime;
-    private Goal? currentGoal;
-    private bool pendingHold;
+    private Goal currentGoal;
 
     // debug stuff
     private int turn;
@@ -31,6 +31,22 @@ public class AiController : Controller
     public int debugTurn = -1;
 
     public override bool Muted => true;
+
+    private void Start()
+    {
+        timeBetweenMoves = GameManager.Instance.AiTimeBetweenMoves;
+        GameManager.OnAiTimeBetweenMovesChange += OnAiTimeBetweenMovesChange;
+    }
+
+    private void OnDestroy()
+    {
+        GameManager.OnAiTimeBetweenMovesChange -= OnAiTimeBetweenMovesChange;
+    }
+
+    private void OnAiTimeBetweenMovesChange(float value)
+    {
+        timeBetweenMoves = value;
+    }
 
     public override Move GetMove(BoardState state)
     {
@@ -43,10 +59,10 @@ public class AiController : Controller
 
         if (fastMode) nextMoveTime = Time.time;
 
-        if (!currentGoal.HasValue)
+        if (currentGoal == null)
             FindNewGoal(state.DeepClone());
 
-        ConvertGoalToMove(state, move);
+        ConvertCurrentGoalToMove(state, move);
 
         return move;
     }
@@ -58,127 +74,137 @@ public class AiController : Controller
         if (turn == slowDownTurn) fastMode = false;
 #endif
 
-        var bestScore = FindBestGoalsForState(boardState.DeepClone(), float.MinValue);
-
-        var stateWithHeldPiece = boardState.DeepClone();
-        stateWithHeldPiece.HoldPiece();
-        var bestHoldScore = FindBestGoalsForState(stateWithHeldPiece, bestScore);
-
-        if (bestHoldScore > bestScore)
-            pendingHold = true;
-
-#if UNITY_EDITOR
-        if (!currentGoal.HasValue)
-            return;
-
-        var testState = boardState.DeepClone();
-        if (pendingHold) testState.HoldPiece();
-
-        var curHoleScore = EvaluateHoleScore(testState);
-        GetStateToGoal(testState, currentGoal.Value);
-        EvaluateBoard(testState, curHoleScore, true);
-#endif
+        var startingHoleScore = EvaluateHoleScore(boardState);
+        currentGoal = FindBestGoalForState(boardState, startingHoleScore, 0).Item1;
     }
 
-    private float FindBestGoalsForState(BoardState boardState, float initialBestScore)
+    private Tuple<Goal, float> FindBestGoalForState(
+        BoardState boardState,
+        int startingHoleScore,
+        int depth,
+        bool prevHeld = false)
     {
-        var bestGoalScore = initialBestScore;
-        var curHoleScore = EvaluateHoleScore(boardState);
+        var isMaxDepth = depth >= maxDepth;
+        var best = new Tuple<Goal, float>(new Goal(), float.MinValue);
 
-        for (var rotationIndex = 0; rotationIndex <= 3; ++rotationIndex)
+        Goal goal;
+        for (var rotation = 0; rotation <= boardState.PieceData.MaxRotation; ++rotation)
         {
+            boardState.Rotate(rotation);
+
             for (var x = -1; x < boardState.Columns; ++x)
             {
                 var boardStateClone = boardState.DeepClone();
-                var goal = new Goal { xPosition = x, rotation = rotationIndex, };
-                if (!GetStateToGoal(boardStateClone, goal))
+                goal = new Goal { xPosition = x, rotation = rotation, };
+                var translation = new Vector2Int(goal.xPosition - boardStateClone.PiecePosition.x, 0);
+                if (!boardStateClone.MoveTranslation(translation))
                     continue;
 
-                var score = EvaluateBoard(boardStateClone, curHoleScore);
-                if (score <= bestGoalScore)
-                    continue;
+                var clearedRows = boardStateClone.HardDrop(isMaxDepth);
+                var score = EvaluateClearedRows(clearedRows);
 
-                bestGoalScore = score;
-                currentGoal = goal;
+                if (isMaxDepth)
+                {
+                    score += EvaluateBoard(boardStateClone, startingHoleScore);
+                }
+                else
+                {
+                    var tempScore = EvaluateBoard(boardStateClone, startingHoleScore);
+                    if (tempScore < best.Item2 - 50)
+                        score = float.MinValue;
+                    else
+                        score += FindBestGoalForState(boardStateClone, startingHoleScore, depth + 1).Item2;
+                }
+
+                if (score > best.Item2)
+                    best = new Tuple<Goal, float>(goal, score);
             }
+
+            boardState.Rotate(-rotation);
         }
 
-        return bestGoalScore;
+        if (prevHeld)
+            return best;
+
+        boardState.HoldPiece();
+        var holdBest = FindBestGoalForState(boardState, startingHoleScore, depth, true);
+
+        if (!(holdBest.Item2 > best.Item2))
+            return best;
+
+        goal = holdBest.Item1;
+        goal.hold = true;
+        best = new Tuple<Goal, float>(goal, holdBest.Item2);
+        return best;
     }
 
-    private static bool GetStateToGoal(BoardState state, Goal goal)
+    private void ConvertCurrentGoalToMove(BoardState state, Move move)
     {
-        state.Rotate(goal.rotation - state.PieceRotation);
-
-        return state.MoveTranslation(new Vector2Int(goal.xPosition - state.PiecePosition.x, 0));
-    }
-
-    private void ConvertGoalToMove(BoardState state, Move move)
-    {
-        if (!currentGoal.HasValue)
+        if (currentGoal == null)
             return;
 
-        if (pendingHold)
+        if (currentGoal.hold)
         {
             move.hold = true;
-            pendingHold = false;
+            currentGoal.hold = false;
             return;
         }
 
-        var goal = currentGoal.Value;
-
-        if (goal.xPosition == state.PiecePosition.x && goal.rotation == state.PieceRotation)
+        if (currentGoal.xPosition == state.PiecePosition.x && currentGoal.rotation == state.PieceRotation)
         {
             move.hardDrop = true;
             currentGoal = null;
             return;
         }
 
-        if (goal.xPosition < state.PiecePosition.x)
+        if (currentGoal.xPosition < state.PiecePosition.x)
             move.direction = Move.Direction.Left;
-        else if (goal.xPosition > state.PiecePosition.x)
+        else if (currentGoal.xPosition > state.PiecePosition.x)
             move.direction = Move.Direction.Right;
 
-        if (goal.rotation - state.PieceRotation >= 3)
+        if (currentGoal.rotation - state.PieceRotation >= 3)
             move.rotation = Move.Rotation.Counterclockwise;
-        else if (goal.rotation != state.PieceRotation)
+        else if (currentGoal.rotation != state.PieceRotation)
             move.rotation = Move.Rotation.Clockwise;
     }
 
-    private float EvaluateBoard(BoardState boardState, int curHoleScore, bool debugBest = false)
+    private float EvaluateBoard(BoardState boardState, int startingHoleScore, bool debugBest = false)
     {
-        var clearedRows = boardState.HardDrop(true);
-
         var holeScore = EvaluateHoleScore(boardState);
         var maxHeight = EvaluateMaxHeight(boardState);
         var bumpiness = EvaluateBumpiness(boardState);
-        var tilesInLastColumn = CountTilesInLastColumn(boardState);
+        var lastColumnHeight = GetColumnHeight(boardState, boardState.Columns - 1);
 
         float score = 0;
         score += maxHeight * maxHeightMultiplier;
         score += bumpiness * bumpinessMultiplier;
         score += holeScore * holesMultiplier;
-        score += tilesInLastColumn * tilesInLastColumnMultiplier;
+        score += lastColumnHeight * lastColumnHeightMultiplier;
 
         // reducing number of holes is ALWAYS top priority
-        if (holeScore < curHoleScore)
+        if (holeScore < startingHoleScore)
             score += float.MaxValue;
 
-        if (clearedRows == 4)
-            score += clearFourScore;
-        else if (clearedRows != 0)
-            score += (4 - clearedRows) * clearLessThanFourMultiplier;
-
+#if UNITY_EDITOR
         if (fastMode && maxHeight > slowDownHeight)
             fastMode = false;
 
-#if UNITY_EDITOR
-        if ((debugBest && clearedRows is > 0 and < 4) || (debugBest && holeScore > curHoleScore) ||
-            turn == debugTurn)
+        if ((debugBest && holeScore > startingHoleScore) || turn == debugTurn)
             print("debugging11");
 #endif
 
         return score;
+    }
+
+    private float EvaluateClearedRows(int clearedRows)
+    {
+        if (clearedRows == 4)
+            return clearFourScore;
+
+        if (clearedRows != 0)
+            return (4 - clearedRows) * clearLessThanFourMultiplier;
+
+        return 0;
     }
 
     private static int EvaluateMaxHeight(BoardState boardState)
@@ -247,17 +273,5 @@ public class AiController : Controller
         }
 
         return holeScore;
-    }
-
-    private static int CountTilesInLastColumn(BoardState boardState)
-    {
-        var tilesInLastColumn = 0;
-        for (var y = 0; y < boardState.Rows; ++y)
-        {
-            if (boardState.Tiles[boardState.Columns - 1, y])
-                tilesInLastColumn += 1;
-        }
-
-        return tilesInLastColumn;
     }
 }

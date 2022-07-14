@@ -1,8 +1,8 @@
 *.exe
 *.dll
 MonoBleedingEdge
-tetris tutorial_Data
-tetris tutorial_BurstDebugInformation_DoNotShip
+Tehtris_Data
+Tehtris_BurstDebugInformation_DoNotShip
 
 ### Unity ###
 # Created by https://www.toptal.com/developers/gitignore/api/unity

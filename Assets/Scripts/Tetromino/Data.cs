@@ -213,4 +213,16 @@ public static class Data
             { Tetromino.T, WallKicksJLostz },
             { Tetromino.Z, WallKicksJLostz },
         };
+
+    public static readonly Dictionary<Tetromino, int> MaxRotationIndexes =
+        new()
+        {
+            { Tetromino.I, 1 },
+            { Tetromino.J, 3 },
+            { Tetromino.L, 3 },
+            { Tetromino.O, 0 },
+            { Tetromino.S, 1 },
+            { Tetromino.T, 3 },
+            { Tetromino.Z, 1 },
+        };
 }

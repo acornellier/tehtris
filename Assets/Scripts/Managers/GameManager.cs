@@ -8,6 +8,12 @@ public class GameManager : Singleton<GameManager>
 {
     private GameMode mode = GameMode.MainMenu;
 
+    private bool paused;
+    public static event Action<bool> OnGamePauseChange;
+
+    private float aiTimeBetweenMoves = 0.2f;
+    public static event Action<float> OnAiTimeBetweenMovesChange;
+
     public GameMode Mode
     {
         get => mode;
@@ -19,9 +25,6 @@ public class GameManager : Singleton<GameManager>
         }
     }
 
-    private bool paused;
-    public static event Action<bool> OnGamePauseChange;
-
     public bool Paused
     {
         get => paused;
@@ -29,6 +32,17 @@ public class GameManager : Singleton<GameManager>
         {
             paused = value;
             OnGamePauseChange?.Invoke(value);
+        }
+    }
+
+    public float AiTimeBetweenMoves
+    {
+        get => aiTimeBetweenMoves;
+        set
+        {
+            Debug.Log("AiTimeBetweenMoves::set");
+            aiTimeBetweenMoves = value;
+            OnAiTimeBetweenMovesChange?.Invoke(value);
         }
     }
 }
