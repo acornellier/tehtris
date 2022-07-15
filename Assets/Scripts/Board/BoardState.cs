@@ -10,7 +10,7 @@ public class BoardState
     private const float StepDelay = 1f;
 
     public Tile[,] Tiles { get; private set; }
-    public List<TetrominoData> Queue { get; private set; }
+    public List<TetrominoData> Queue { get; private set; } = new();
     public TetrominoData HeldPiece { get; private set; }
     public Vector2Int PiecePosition { get; private set; }
     public Vector2Int[] PieceCells { get; private set; } = new Vector2Int[4];
@@ -41,13 +41,13 @@ public class BoardState
     public BoardState(Vector2Int boardSize, IEnumerable<TetrominoData> queue)
     {
         Tiles = new Tile[boardSize.x, boardSize.y];
-        UpdateQueue(queue);
+        PushToQueue(queue);
         SpawnNextPiece();
     }
 
-    public void UpdateQueue(IEnumerable<TetrominoData> newQueue)
+    public void PushToQueue(IEnumerable<TetrominoData> tetrominos)
     {
-        Queue = new List<TetrominoData>(newQueue);
+        Queue.AddRange(new List<TetrominoData>(tetrominos));
     }
 
     public BoardState DeepClone()
@@ -356,5 +356,27 @@ public class BoardState
         }
 
         return linesCleared;
+    }
+
+    public void PushGarbage(int linesToSend, Tile garbageTile)
+    {
+        var emptyColumn = Random.Range(0, Columns - 1);
+
+        for (var y = Rows - 1 - linesToSend; y >= 0; --y)
+        {
+            for (var x = 0; x < Columns; ++x)
+            {
+                Tiles[x, y + linesToSend] = Tiles[x, y];
+            }
+        }
+
+        for (var y = 0; y < linesToSend; ++y)
+        {
+            for (var x = 0; x < Columns; ++x)
+            {
+                if (x != emptyColumn)
+                    Tiles[x, y] = garbageTile;
+            }
+        }
     }
 }

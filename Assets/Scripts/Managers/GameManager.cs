@@ -21,7 +21,7 @@ public class GameManager : Singleton<GameManager>
         {
             mode = value;
             paused = false;
-            SceneManager.LoadScene("Tetris");
+            SceneManager.LoadScene(mode == GameMode.Battle ? "Battle" : "Tetris");
         }
     }
 
@@ -50,5 +50,6 @@ public enum GameMode
 {
     MainMenu,
     Solo,
-    Ai,
+    WatchAi,
+    Battle,
 }

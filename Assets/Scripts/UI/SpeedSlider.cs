@@ -12,7 +12,7 @@ public class SpeedSlider : MonoBehaviour
 
     private void Start()
     {
-        if (GameManager.Instance.Mode != GameMode.Ai)
+        if (GameManager.Instance.Mode != GameMode.WatchAi)
         {
             gameObject.SetActive(false);
             return;

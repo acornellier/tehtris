@@ -1,0 +1,74 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &1179817342039989801
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 5866807038144246146}
+  - component: {fileID: 1046571393647128076}
+  - component: {fileID: 4585132185926572665}
+  m_Layer: 0
+  m_Name: TetrominoGenerator
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &5866807038144246146
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1179817342039989801}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 10, y: 7, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 7
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!156049354 &1046571393647128076
+Grid:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1179817342039989801}
+  m_Enabled: 1
+  m_CellSize: {x: 1, y: 1, z: 0}
+  m_CellGap: {x: 0, y: 0, z: 0}
+  m_CellLayout: 0
+  m_CellSwizzle: 0
+--- !u!114 &4585132185926572665
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1179817342039989801}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6a2f5aefac6b00f45bd59b367324586f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  datas:
+  - tetromino: 0
+    tile: {fileID: 11400000, guid: e699e5a0a80e826448f4a081c7d75191, type: 2}
+  - tetromino: 1
+    tile: {fileID: 11400000, guid: c12cf36f7e1ec7746ac445c20d21f625, type: 2}
+  - tetromino: 2
+    tile: {fileID: 11400000, guid: e50f82018a793f94a97468fa7289b080, type: 2}
+  - tetromino: 3
+    tile: {fileID: 11400000, guid: ad5b5ff416c42d245ba080afbf82b88e, type: 2}
+  - tetromino: 4
+    tile: {fileID: 11400000, guid: 0ca6728c40de798488e33f8243380221, type: 2}
+  - tetromino: 5
+    tile: {fileID: 11400000, guid: 0021630ec3835f748a0136b3e89972c0, type: 2}
+  - tetromino: 6
+    tile: {fileID: 11400000, guid: 87587da5ac563ec459e246e3848bc711, type: 2}
