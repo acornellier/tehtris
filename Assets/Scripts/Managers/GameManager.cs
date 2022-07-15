@@ -40,7 +40,6 @@ public class GameManager : Singleton<GameManager>
         get => aiTimeBetweenMoves;
         set
         {
-            Debug.Log("AiTimeBetweenMoves::set");
             aiTimeBetweenMoves = value;
             OnAiTimeBetweenMovesChange?.Invoke(value);
         }

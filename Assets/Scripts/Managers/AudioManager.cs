@@ -25,7 +25,6 @@ public class AudioManager : Singleton<AudioManager>
 
     protected override void OnStart()
     {
-        Debug.Log("AudioManager.OnStart");
         SetVolume(AudioChannel.Master, GetChannelValue(AudioChannel.Master));
         SetVolume(AudioChannel.Sound, GetChannelValue(AudioChannel.Sound));
         SetVolume(AudioChannel.Music, GetChannelValue(AudioChannel.Music));

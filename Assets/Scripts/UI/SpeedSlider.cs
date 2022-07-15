@@ -8,14 +8,21 @@ public class SpeedSlider : MonoBehaviour
     private void Awake()
     {
         slider = GetComponent<Slider>();
-        slider.onValueChanged.AddListener(HandleSliderValueChanged);
     }
 
     private void Start()
     {
-        slider.minValue = 0;
+        if (GameManager.Instance.Mode != GameMode.Ai)
+        {
+            gameObject.SetActive(false);
+            return;
+        }
+
+        slider.minValue = 0.5f;
         slider.maxValue = 1;
-        slider.value = GameManager.Instance.AiTimeBetweenMoves;
+        slider.value = 1 - GameManager.Instance.AiTimeBetweenMoves;
+
+        slider.onValueChanged.AddListener(HandleSliderValueChanged);
     }
 
     private static void HandleSliderValueChanged(float value)
