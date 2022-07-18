@@ -356,7 +356,6 @@ MonoBehaviour:
   tilemap: {fileID: 681610144482651870}
   holderTilemap: {fileID: 681610145098333323}
   queueTilemap: {fileID: 757686660605336763}
-  garbageTile: {fileID: 11400000, guid: e50f82018a793f94a97468fa7289b080, type: 2}
   ghostTile: {fileID: 11400000, guid: 22a9fb6de3a1d694faea76085c2003f6, type: 2}
   tetrominoGenerator: {fileID: 0}
   gameOverMenu: {fileID: 0}
@@ -390,7 +389,7 @@ MonoBehaviour:
   bumpinessMultiplier: -2
   holesMultiplier: -20
   lastColumnHeightMultiplier: -10
-  clearLessThanFourMultiplier: -15
+  clearLessThanFourMultiplier: 0
   clearFourScore: 100
   fastMode: 0
   slowDownTurn: -1

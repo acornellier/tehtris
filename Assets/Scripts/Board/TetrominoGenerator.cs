@@ -11,8 +11,6 @@ public class TetrominoGenerator : MonoBehaviour
 
     public Dictionary<TileState, Tile> TileStateToTile { get; } = new();
 
-    private Random gen;
-
     private void Awake()
     {
         foreach (var data in datas)
@@ -23,12 +21,10 @@ public class TetrominoGenerator : MonoBehaviour
 
         TileStateToTile[TileState.Empty] = null;
         TileStateToTile[TileState.Garbage] = garbageTile;
-
-        gen = new Random();
     }
 
     public IEnumerable<TetrominoData> Generate()
     {
-        return datas.OrderBy(_ => gen.Next());
+        return datas.OrderBy(_ => GameManager.Instance.gen.Next());
     }
 }

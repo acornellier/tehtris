@@ -74,7 +74,7 @@ public class BoardState
         var moveResults = new MoveResults();
         if (move.hold)
         {
-            HoldPiece();
+            Hold();
             moveResults.held = true;
         }
         else if (move.hardDrop)
@@ -312,7 +312,7 @@ public class BoardState
             GameOver = true;
     }
 
-    public void HoldPiece()
+    public void Hold()
     {
         if (HoldingLocked) return;
 
@@ -370,7 +370,7 @@ public class BoardState
 
     private void PushGarbage()
     {
-        var emptyColumn = Random.Range(0, Columns - 1);
+        var emptyColumn = GameManager.Instance.gen.Next(0, Columns);
 
         for (var y = Rows - 1 - PendingGarbage; y >= 0; --y)
         {
@@ -387,5 +387,7 @@ public class BoardState
                 Tiles[x, y] = x == emptyColumn ? TileState.Empty : TileState.Garbage;
             }
         }
+
+        PendingGarbage = 0;
     }
 }

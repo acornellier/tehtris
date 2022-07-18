@@ -68,6 +68,7 @@ public class Board : MonoBehaviour
 
         if (state.GameOver)
         {
+            UpdateTilemaps();
             gameOverMenu.SetActive(true);
             enabled = false;
             return;
@@ -84,6 +85,9 @@ public class Board : MonoBehaviour
 
         if (moveResults.linesCleared > 0)
             OnLinesClearedEvent?.Invoke(GetInstanceID(), moveResults.linesCleared);
+
+        // if (GameManager.Instance.gen.NextDouble() > 0.8)
+        // state.AddPendingGarbage((int)Math.Ceiling((float)GameManager.Instance.gen.Next(1, 3)));
         // lineClearCount += 1;
         // totalLinesCleared += moveResults.linesCleared;
         // print($"avg lines cleared per clear {1.0f * totalLinesCleared / lineClearCount}");

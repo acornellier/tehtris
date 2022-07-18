@@ -66,9 +66,9 @@ MonoBehaviour:
   - <Tetromino>k__BackingField: 2
     <Tile>k__BackingField: {fileID: 11400000, guid: e50f82018a793f94a97468fa7289b080, type: 2}
   - <Tetromino>k__BackingField: 3
-    <Tile>k__BackingField: {fileID: 11400000, guid: 0ca6728c40de798488e33f8243380221, type: 2}
-  - <Tetromino>k__BackingField: 4
     <Tile>k__BackingField: {fileID: 11400000, guid: ad5b5ff416c42d245ba080afbf82b88e, type: 2}
+  - <Tetromino>k__BackingField: 4
+    <Tile>k__BackingField: {fileID: 11400000, guid: 0ca6728c40de798488e33f8243380221, type: 2}
   - <Tetromino>k__BackingField: 5
     <Tile>k__BackingField: {fileID: 11400000, guid: 87587da5ac563ec459e246e3848bc711, type: 2}
   - <Tetromino>k__BackingField: 6

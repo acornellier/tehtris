@@ -2,10 +2,13 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using yaSingleton;
+using Random = System.Random;
 
 [CreateAssetMenu(fileName = "Game Manager", menuName = "Singletons/GameManager")]
 public class GameManager : Singleton<GameManager>
 {
+    public Random gen = new(1);
+
     private GameMode mode = GameMode.MainMenu;
 
     private bool paused;

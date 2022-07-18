@@ -72,31 +72,47 @@ public class AiController : Controller
 #if UNITY_EDITOR
         ++turn;
         if (turn == slowDownTurn) fastMode = false;
+        print($"turn {turn}");
 #endif
 
         var startingHoleScore = EvaluateHoleScore(boardState);
-        currentGoal = FindBestGoalForState(boardState, startingHoleScore, 0).Item1;
+        currentGoal = FindBestGoalForState(boardState.DeepClone(), startingHoleScore, 0).Item1;
+
+#if UNITY_EDITOR
+        if (currentGoal.hold)
+            boardState.Hold();
+
+        boardState.Rotate(currentGoal.rotation);
+        var translation = new Vector2Int(currentGoal.xPosition - boardState.PiecePosition.x, 0);
+        if (!boardState.MoveTranslation(translation))
+            return;
+
+        boardState.HardDrop(true);
+        EvaluateBoard(boardState, startingHoleScore, true);
+#endif
     }
 
-    private Tuple<Goal, float> FindBestGoalForState(BoardState boardState, int startingHoleScore, int depth)
+    private Tuple<Goal, float> FindBestGoalForState(BoardState boardState, float startingHoleScore, int depth)
     {
         var isMaxDepth = depth >= maxDepth;
         var best = new Tuple<Goal, float>(new Goal(), float.MinValue);
+        var bestHasWorseHoles = false;
 
         Goal goal;
         for (var rotation = 0; rotation <= boardState.PieceData.MaxRotation; ++rotation)
         {
-            boardState.Rotate(rotation);
-
             for (var x = -1; x < boardState.Columns; ++x)
             {
-                var boardStateClone = boardState.DeepClone();
                 goal = new Goal { xPosition = x, rotation = rotation, };
+
+                var boardStateClone = boardState.DeepClone();
+                boardStateClone.Rotate(goal.rotation - boardStateClone.PieceRotation);
                 var translation = new Vector2Int(goal.xPosition - boardStateClone.PiecePosition.x, 0);
                 if (!boardStateClone.MoveTranslation(translation))
                     continue;
 
                 var clearedRows = boardStateClone.HardDrop(isMaxDepth);
+                var holeScore = EvaluateHoleScore(boardStateClone);
                 var score = EvaluateClearedRows(clearedRows);
 
                 if (isMaxDepth)
@@ -106,24 +122,29 @@ public class AiController : Controller
                 else
                 {
                     var tempScore = EvaluateBoard(boardStateClone, startingHoleScore);
-                    if (tempScore < best.Item2 - 50)
+                    if (tempScore < best.Item2 - 50 && !bestHasWorseHoles)
                         score = float.MinValue;
                     else
                         score += FindBestGoalForState(boardStateClone, startingHoleScore, depth + 1).Item2;
                 }
 
-                if (score > best.Item2)
-                    best = new Tuple<Goal, float>(goal, score);
-            }
+                if (turn == debugTurn && depth == 0)
+                    print($"x {x} r {rotation} s {score}");
 
-            boardState.Rotate(-rotation);
+                if (score <= best.Item2)
+                    continue;
+
+                best = new Tuple<Goal, float>(goal, score);
+                bestHasWorseHoles = holeScore > startingHoleScore;
+            }
         }
 
         if (boardState.HoldingLocked)
             return best;
 
-        boardState.HoldPiece();
-        var holdBest = FindBestGoalForState(boardState, startingHoleScore, depth);
+        var clone = boardState.DeepClone();
+        clone.Hold();
+        var holdBest = FindBestGoalForState(clone, startingHoleScore, depth);
 
         if (holdBest.Item2 <= best.Item2)
             return best;
@@ -164,8 +185,10 @@ public class AiController : Controller
             move.rotation = Move.Rotation.Clockwise;
     }
 
-    private float EvaluateBoard(BoardState boardState, int startingHoleScore, bool debugBest = false)
+    private float EvaluateBoard(BoardState boardState, float startingHoleScore, bool debugBest = false)
     {
+        if (boardState.GameOver) return float.MinValue;
+
         var holeScore = EvaluateHoleScore(boardState);
         var maxHeight = EvaluateMaxHeight(boardState);
         var bumpiness = EvaluateBumpiness(boardState);
@@ -177,16 +200,15 @@ public class AiController : Controller
         score += bumpiness * bumpinessMultiplier;
         score += lastColumnHeight * lastColumnHeightMultiplier;
 
-        // reducing number of holes is ALWAYS top priority
-        if (holeScore < startingHoleScore)
-            score += float.MaxValue;
-
 #if UNITY_EDITOR
         if (fastMode && maxHeight > slowDownHeight)
             fastMode = false;
 
-        if ((debugBest && holeScore > startingHoleScore) || turn == debugTurn)
-            print("debugging11");
+        if (debugBest && holeScore > startingHoleScore)
+            print($"debugging turn {turn}");
+
+        if (debugBest)
+            fastMode = fastMode;
 #endif
 
         return score;
@@ -254,9 +276,9 @@ public class AiController : Controller
         return 0;
     }
 
-    private static int EvaluateHoleScore(BoardState boardState)
+    private static float EvaluateHoleScore(BoardState boardState)
     {
-        var holeScore = 0;
+        var holeScore = 0f;
 
         for (var x = 0; x < boardState.Columns; ++x)
         {
@@ -264,7 +286,7 @@ public class AiController : Controller
             for (var y = 0; y < columnHeight; ++y)
             {
                 if (boardState.Tiles[x, y] == TileState.Empty)
-                    holeScore += columnHeight - y;
+                    holeScore += 1 + (columnHeight - y) * 0.1f;
             }
         }
 
