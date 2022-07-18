@@ -5,12 +5,12 @@ public class GameOverMenu : MonoBehaviour
 {
     public void Restart()
     {
-        GameManager.Instance.Mode = GameMode.Solo;
+        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
 
     public void MainMenu()
     {
-        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+        SceneManager.LoadScene("StartMenu");
     }
 
     public void Quit()

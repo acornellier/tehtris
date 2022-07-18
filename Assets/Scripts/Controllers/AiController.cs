@@ -78,11 +78,7 @@ public class AiController : Controller
         currentGoal = FindBestGoalForState(boardState, startingHoleScore, 0).Item1;
     }
 
-    private Tuple<Goal, float> FindBestGoalForState(
-        BoardState boardState,
-        int startingHoleScore,
-        int depth,
-        bool prevHeld = false)
+    private Tuple<Goal, float> FindBestGoalForState(BoardState boardState, int startingHoleScore, int depth)
     {
         var isMaxDepth = depth >= maxDepth;
         var best = new Tuple<Goal, float>(new Goal(), float.MinValue);
@@ -123,13 +119,13 @@ public class AiController : Controller
             boardState.Rotate(-rotation);
         }
 
-        if (prevHeld)
+        if (boardState.HoldingLocked)
             return best;
 
         boardState.HoldPiece();
-        var holdBest = FindBestGoalForState(boardState, startingHoleScore, depth, true);
+        var holdBest = FindBestGoalForState(boardState, startingHoleScore, depth);
 
-        if (!(holdBest.Item2 > best.Item2))
+        if (holdBest.Item2 <= best.Item2)
             return best;
 
         goal = holdBest.Item1;
@@ -176,9 +172,9 @@ public class AiController : Controller
         var lastColumnHeight = GetColumnHeight(boardState, boardState.Columns - 1);
 
         float score = 0;
+        score += holeScore * holesMultiplier;
         score += maxHeight * maxHeightMultiplier;
         score += bumpiness * bumpinessMultiplier;
-        score += holeScore * holesMultiplier;
         score += lastColumnHeight * lastColumnHeightMultiplier;
 
         // reducing number of holes is ALWAYS top priority
@@ -251,7 +247,7 @@ public class AiController : Controller
     {
         for (var y = boardState.Rows - 1; y >= 0; --y)
         {
-            if (boardState.Tiles[column, y])
+            if (boardState.Tiles[column, y] != TileState.Empty)
                 return y + 1;
         }
 
@@ -267,8 +263,8 @@ public class AiController : Controller
             var columnHeight = GetColumnHeight(boardState, x);
             for (var y = 0; y < columnHeight; ++y)
             {
-                if (!boardState.Tiles[x, y])
-                    holeScore += columnHeight;
+                if (boardState.Tiles[x, y] == TileState.Empty)
+                    holeScore += columnHeight - y;
             }
         }
 

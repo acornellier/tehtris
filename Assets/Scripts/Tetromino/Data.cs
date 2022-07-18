@@ -225,4 +225,16 @@ public static class Data
             { Tetromino.T, 3 },
             { Tetromino.Z, 1 },
         };
+
+    public static readonly Dictionary<Tetromino, TileState> TileStates =
+        new()
+        {
+            { Tetromino.I, TileState.I },
+            { Tetromino.J, TileState.J },
+            { Tetromino.L, TileState.L },
+            { Tetromino.O, TileState.O },
+            { Tetromino.S, TileState.S },
+            { Tetromino.T, TileState.T },
+            { Tetromino.Z, TileState.Z },
+        };
 }

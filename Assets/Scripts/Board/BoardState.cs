@@ -1,7 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-using UnityEngine.Tilemaps;
 
 public class BoardState
 {
@@ -9,12 +8,15 @@ public class BoardState
     private const float MaxLockDelay = 5f;
     private const float StepDelay = 1f;
 
-    public Tile[,] Tiles { get; private set; }
+    public TileState[,] Tiles { get; private set; }
     public List<TetrominoData> Queue { get; private set; } = new();
     public TetrominoData HeldPiece { get; private set; }
     public Vector2Int PiecePosition { get; private set; }
     public Vector2Int[] PieceCells { get; private set; } = new Vector2Int[4];
     public TetrominoData PieceData { get; private set; }
+    public bool GameOver { get; private set; }
+    public bool HoldingLocked { get; private set; }
+    private int PendingGarbage { get; set; }
 
     private int pieceRotation;
 
@@ -24,8 +26,6 @@ public class BoardState
         private set => pieceRotation = (value % 4 + 4) % 4;
     }
 
-    public bool gameOver;
-    private bool holdingLocked;
     private float stepTime;
     private bool locking;
     private float lockTime; // delayed when moving
@@ -40,7 +40,7 @@ public class BoardState
 
     public BoardState(Vector2Int boardSize, IEnumerable<TetrominoData> queue)
     {
-        Tiles = new Tile[boardSize.x, boardSize.y];
+        Tiles = new TileState[boardSize.x, boardSize.y];
         PushToQueue(queue);
         SpawnNextPiece();
     }
@@ -54,13 +54,16 @@ public class BoardState
     {
         var newState = new BoardState
         {
-            Tiles = (Tile[,])Tiles.Clone(),
+            Tiles = (TileState[,])Tiles.Clone(),
             Queue = new List<TetrominoData>(Queue),
             HeldPiece = HeldPiece,
             PiecePosition = PiecePosition,
             PieceRotation = PieceRotation,
             PieceCells = (Vector2Int[])PieceCells.Clone(),
             PieceData = PieceData,
+            GameOver = GameOver,
+            HoldingLocked = HoldingLocked,
+            PendingGarbage = PendingGarbage,
         };
 
         return newState;
@@ -136,7 +139,7 @@ public class BoardState
                        tilePosition.x < Tiles.GetLength(0) &&
                        tilePosition.y >= 0 &&
                        tilePosition.y < Tiles.GetLength(1) &&
-                       !Tiles[tilePosition.x, tilePosition.y];
+                       Tiles[tilePosition.x, tilePosition.y] == TileState.Empty;
             }
         );
     }
@@ -206,7 +209,7 @@ public class BoardState
             int x;
             int y;
 
-            switch (PieceData.tetromino)
+            switch (PieceData.Tetromino)
             {
                 case Tetromino.I:
                 case Tetromino.O:
@@ -271,10 +274,12 @@ public class BoardState
         foreach (var cell in PieceCells)
         {
             var newPosition = PiecePosition + cell;
-            Tiles[newPosition.x, newPosition.y] = PieceData.tile;
+            Tiles[newPosition.x, newPosition.y] = PieceData.TileState;
         }
 
         var linesCleared = ClearLines();
+
+        PushGarbage();
 
         if (!skipSpawn)
             SpawnNextPiece();
@@ -292,7 +297,7 @@ public class BoardState
     private void SpawnPiece(TetrominoData data)
     {
         var spawnPosition = new Vector2Int(Columns / 2 - 1, Rows - 3);
-        if (data.tetromino == Tetromino.I)
+        if (data.Tetromino == Tetromino.I)
             spawnPosition.y -= 1;
 
         PiecePosition = spawnPosition;
@@ -301,15 +306,15 @@ public class BoardState
         PieceRotation = 0;
         stepTime = Time.time + StepDelay;
         locking = false;
-        holdingLocked = false;
+        HoldingLocked = false;
 
         if (!IsValidPosition(spawnPosition))
-            gameOver = true;
+            GameOver = true;
     }
 
     public void HoldPiece()
     {
-        if (holdingLocked) return;
+        if (HoldingLocked) return;
 
         var prevHeldPiece = HeldPiece;
 
@@ -321,7 +326,7 @@ public class BoardState
         else
             SpawnNextPiece();
 
-        holdingLocked = true;
+        HoldingLocked = true;
     }
 
     private int ClearLines()
@@ -332,7 +337,7 @@ public class BoardState
                 y =>
                     Enumerable
                         .Range(0, Columns)
-                        .All(x => Tiles[x, y])
+                        .All(x => Tiles[x, y] != TileState.Empty)
             )
             .ToList();
 
@@ -348,7 +353,7 @@ public class BoardState
                 if (!clearing)
                     Tiles[x, y - linesCleared] = Tiles[x, y];
 
-                Tiles[x, y] = null;
+                Tiles[x, y] = TileState.Empty;
             }
 
             if (clearing)
@@ -358,24 +363,28 @@ public class BoardState
         return linesCleared;
     }
 
-    public void PushGarbage(int linesToSend, Tile garbageTile)
+    public void AddPendingGarbage(int linesToSend)
+    {
+        PendingGarbage += linesToSend;
+    }
+
+    private void PushGarbage()
     {
         var emptyColumn = Random.Range(0, Columns - 1);
 
-        for (var y = Rows - 1 - linesToSend; y >= 0; --y)
+        for (var y = Rows - 1 - PendingGarbage; y >= 0; --y)
         {
             for (var x = 0; x < Columns; ++x)
             {
-                Tiles[x, y + linesToSend] = Tiles[x, y];
+                Tiles[x, y + PendingGarbage] = Tiles[x, y];
             }
         }
 
-        for (var y = 0; y < linesToSend; ++y)
+        for (var y = 0; y < PendingGarbage; ++y)
         {
             for (var x = 0; x < Columns; ++x)
             {
-                if (x != emptyColumn)
-                    Tiles[x, y] = garbageTile;
+                Tiles[x, y] = x == emptyColumn ? TileState.Empty : TileState.Garbage;
             }
         }
     }

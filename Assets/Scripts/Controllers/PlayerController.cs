@@ -69,9 +69,6 @@ public class PlayerController : Controller
 
         if (direction != Move.Direction.None)
             MoveWithDelay(move, direction);
-
-        if (move.direction != Move.Direction.None)
-            print($"{move.direction}");
     }
 
     private void MoveWithDelay(Move move, Move.Direction direction)

@@ -31,7 +31,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 7
+  m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!156049354 &1046571393647128076
 Grid:
@@ -57,18 +57,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6a2f5aefac6b00f45bd59b367324586f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  garbageTile: {fileID: 11400000, guid: e50f82018a793f94a97468fa7289b080, type: 2}
   datas:
-  - tetromino: 0
-    tile: {fileID: 11400000, guid: e699e5a0a80e826448f4a081c7d75191, type: 2}
-  - tetromino: 1
-    tile: {fileID: 11400000, guid: c12cf36f7e1ec7746ac445c20d21f625, type: 2}
-  - tetromino: 2
-    tile: {fileID: 11400000, guid: e50f82018a793f94a97468fa7289b080, type: 2}
-  - tetromino: 3
-    tile: {fileID: 11400000, guid: ad5b5ff416c42d245ba080afbf82b88e, type: 2}
-  - tetromino: 4
-    tile: {fileID: 11400000, guid: 0ca6728c40de798488e33f8243380221, type: 2}
-  - tetromino: 5
-    tile: {fileID: 11400000, guid: 0021630ec3835f748a0136b3e89972c0, type: 2}
-  - tetromino: 6
-    tile: {fileID: 11400000, guid: 87587da5ac563ec459e246e3848bc711, type: 2}
+  - <Tetromino>k__BackingField: 0
+    <Tile>k__BackingField: {fileID: 11400000, guid: e699e5a0a80e826448f4a081c7d75191, type: 2}
+  - <Tetromino>k__BackingField: 1
+    <Tile>k__BackingField: {fileID: 11400000, guid: c12cf36f7e1ec7746ac445c20d21f625, type: 2}
+  - <Tetromino>k__BackingField: 2
+    <Tile>k__BackingField: {fileID: 11400000, guid: e50f82018a793f94a97468fa7289b080, type: 2}
+  - <Tetromino>k__BackingField: 3
+    <Tile>k__BackingField: {fileID: 11400000, guid: 0ca6728c40de798488e33f8243380221, type: 2}
+  - <Tetromino>k__BackingField: 4
+    <Tile>k__BackingField: {fileID: 11400000, guid: ad5b5ff416c42d245ba080afbf82b88e, type: 2}
+  - <Tetromino>k__BackingField: 5
+    <Tile>k__BackingField: {fileID: 11400000, guid: 87587da5ac563ec459e246e3848bc711, type: 2}
+  - <Tetromino>k__BackingField: 6
+    <Tile>k__BackingField: {fileID: 11400000, guid: 0021630ec3835f748a0136b3e89972c0, type: 2}

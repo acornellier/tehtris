@@ -9,7 +9,6 @@ public class Board : MonoBehaviour
     [SerializeField] private Tilemap tilemap;
     [SerializeField] private Tilemap holderTilemap;
     [SerializeField] private Tilemap queueTilemap;
-    [SerializeField] private Tile garbageTile;
     [SerializeField] private Tile ghostTile;
     [SerializeField] private TetrominoGenerator tetrominoGenerator;
     [SerializeField] private GameObject gameOverMenu;
@@ -67,7 +66,7 @@ public class Board : MonoBehaviour
         var move = controller.GetMove(state.DeepClone());
         var moveResults = state.MakeMove(move);
 
-        if (state.gameOver)
+        if (state.GameOver)
         {
             gameOverMenu.SetActive(true);
             enabled = false;
@@ -110,7 +109,8 @@ public class Board : MonoBehaviour
         {
             for (var y = 0; y < state.Rows; ++y)
             {
-                tilemap.SetTile(new Vector3Int(x + Bounds.xMin, y + Bounds.yMin, 0), state.Tiles[x, y]);
+                var tile = tetrominoGenerator.TileStateToTile[state.Tiles[x, y]];
+                tilemap.SetTile(new Vector3Int(x + Bounds.xMin, y + Bounds.yMin, 0), tile);
             }
         }
     }
@@ -134,7 +134,7 @@ public class Board : MonoBehaviour
 
     private void SetPieceTiles()
     {
-        SetPieceCells(state.PieceData.tile, state.PiecePosition);
+        SetPieceCells(state.PieceData.Tile, state.PiecePosition);
     }
 
     private void SetPieceCells(Tile tile, Vector2Int position)
@@ -150,7 +150,7 @@ public class Board : MonoBehaviour
             return;
 
         holderTilemap.ClearAllTiles();
-        Utilities.SetCells(holderTilemap, state.HeldPiece.Cells, state.HeldPiece.tile);
+        Utilities.SetCells(holderTilemap, state.HeldPiece.Cells, state.HeldPiece.Tile);
     }
 
     private void SetQueueTiles()
@@ -163,7 +163,7 @@ public class Board : MonoBehaviour
         {
             var tetromino = state.Queue[i];
             var position = new Vector2Int(0, i * -3);
-            Utilities.SetCells(queueTilemap, tetromino.Cells, tetromino.tile, position);
+            Utilities.SetCells(queueTilemap, tetromino.Cells, tetromino.Tile, position);
         }
     }
 
@@ -172,6 +172,7 @@ public class Board : MonoBehaviour
         if (GetInstanceID() == instanceId)
             return;
 
-        state.PushGarbage(linesCleared, garbageTile);
+        var linesToSend = (int)Math.Ceiling(linesCleared / 2f);
+        state.AddPendingGarbage(linesToSend);
     }
 }
